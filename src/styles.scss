@@ -1,0 +1,20 @@
+/* You can add global styles to this file, and also import other style files */
+@import '~@angular/material/prebuilt-themes/deeppurple-amber.css';
+@import '~bootstrap/scss/bootstrap.scss';
+
+body {
+  font-family: Roboto, Arial, sans-serif;
+  margin: 0;
+}
+
+// ----------------------------------------------------------------------------------------------
+// NOTE: Modal ----------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------
+
+// INFO: Properties
+.mat-dialog-container {
+  padding: 0 !important;
+}
+.mat-dialog-content, .mat-dialog-actions:last-child {
+  margin: 0 !important;
+}

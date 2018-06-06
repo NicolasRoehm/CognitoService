@@ -1,0 +1,43 @@
+<div class="container">
+  <div class="row mt-5">
+    <div class="col">
+      <!-- NOTE: Login -->
+      <cal-login-form #loginForm 
+        (login)="login($event)" 
+        (forgottenPass)="forgottenPassword($event)" 
+        (sendFirstPass)="firstPassword($event)" 
+        (sendResetPass)="lostPassword($event)">
+      </cal-login-form>
+    </div>
+    <div class="col">
+      <!-- NOTE: Request -->
+      <div class="row">
+        <div class="col">
+          <h3>Refresh</h3>
+          <ul class="list-unstyled d-block">
+            <li *ngFor="let refresh of refreshList">
+              {{ refresh.time }} {{ refresh.response }}
+            </li>
+          </ul>
+        </div>
+        <div class="col">
+          <h3>Response</h3>
+          <ul class="list-unstyled d-block">
+            <li *ngFor="let request of requestList">
+              {{ request.time }} {{ request.response }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col" *ngIf="cognitoService.isAuthenticated()">
+      <!-- NOTE: Logout -->
+      <button mat-button color="primary" (click)="logout()">
+        Logout
+      </button>
+      <button mat-button color="accent" (click)="request()">
+        Request
+      </button>
+    </div>
+  </div>
+</div>
