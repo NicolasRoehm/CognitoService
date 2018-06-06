@@ -2,7 +2,7 @@
 > Angular service providing authentication using Amazon Cognito.
 
 <a href="https://nodei.co/npm/@caliatys/cognito-service/" target="_blank">
-  <img src="https://nodei.co/npm/@caliatys/cognito-service.svg">
+  <img src="https://nodei.co/npm/@caliatys/cognito-service.svg?downloads=true">
 </a>
 
 ## Installation
