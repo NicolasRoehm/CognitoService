@@ -1,5 +1,5 @@
-# CognitoService
-> JavaScript service for AWS Cognito with Angular 6.
+# Cognito Service
+> Angular service providing authentication using Amazon Cognito.
 
 ## Installation
 ```sh

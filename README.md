@@ -1,5 +1,9 @@
-# CognitoService
-> JavaScript service for AWS Cognito with Angular 6.
+# Cognito Service
+> Angular service providing authentication using Amazon Cognito.
+
+<a href="https://nodei.co/npm/@caliatys/cognito-service/" target="_blank">
+  <img src="https://nodei.co/npm/@caliatys/cognito-service.svg">
+</a>
 
 ## Installation
 ```sh
