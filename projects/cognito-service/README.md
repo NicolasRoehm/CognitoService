@@ -38,7 +38,7 @@ Now you can use this service with your own components or with our [generic authe
 ```sh
 git clone https://github.com/Caliatys/CognitoService
 cd CognitoService/
-npm install --save
+npm install
 ```
 
 Don't forget to edit the parameters located in [src/app/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/cognito.const.ts).
@@ -66,7 +66,7 @@ ng serve
 ## Roadmap
 
 ### In Progress
-- MFA
+- Angular 6 demo
 
 ### Planning
 - Facebook

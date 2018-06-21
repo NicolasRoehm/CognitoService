@@ -17,6 +17,8 @@ import { Observable }        from 'rxjs/Observable';
 import * as AWS              from 'aws-sdk';
 import * as AWSCognito       from 'amazon-cognito-identity-js';
 
+// TODO: Type responses (resolve & reject with code + data )
+
 @Injectable({
   providedIn: 'root'
 })
@@ -39,6 +41,8 @@ export class CognitoService
   public adminSecretKeyId : string = null;
 
   public storagePrefix : string = 'CognitoService';
+
+  private cognitoUser : AWSCognito.CognitoUser;
 
   constructor
   (
@@ -107,6 +111,14 @@ export class CognitoService
     tokensStr  = localStorage.getItem(storageKey);
     tokensObj  = JSON.parse(tokensStr);
     return tokensObj;
+  }
+
+  public updateTokens(session : AWSCognito.CognitoUserSession) : void
+  {
+    let tokens : any = null;
+    this.setTokens(session);
+    tokens = this.getTokens();
+    this.setIdToken(tokens.idToken);
   }
 
   // -------------------------------------------------------------------------------------------
@@ -200,7 +212,11 @@ export class CognitoService
   // NOTE: Authentication ----------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public authenticateUserPool(username : string, password : string) : Observable<any>
+  // TODO: Comment resolve parameters
+  /**
+  *
+  */
+  public authenticateUser(username : string, password : string) : Observable<any>
   {
     let authenticationData = {
       Username : username,
@@ -213,23 +229,38 @@ export class CognitoService
     {
       cognitoUser.authenticateUser(authenticationDetails,
       {
-        // TODO: Add MFA
-        newPasswordRequired : (userAttributes, requiredAttributes) =>
+        newPasswordRequired : (userAttributes : any, requiredAttributes : any) =>
         {
-          reject(-1);
+          this.cognitoUser = cognitoUser; // NOTE: https://github.com/amazon-archives/amazon-cognito-identity-js/issues/365
+          reject({ code : 1, data : null });
         },
         onSuccess : (session : AWSCognito.CognitoUserSession) =>
         {
-          let tokens : any = null;
-          this.setTokens(session);
-          tokens = this.getTokens();
-          this.setIdToken(tokens.idToken);
-          resolve(session);
+          this.updateTokens(session);
+          resolve({ code : 1, data : session });
         },
         onFailure : (err) =>
         {
           console.error('CognitoService : authenticateUserPool -> authenticateUser', err);
-          reject(-2);
+          reject({ code : 2, data : err });
+        },
+        mfaSetup : (challengeName : any, challengeParameters : any) =>
+        {
+          cognitoUser.associateSoftwareToken(
+          {
+            associateSecretCode : (secretCode) =>
+            {
+              reject({ code : 3, data : secretCode });
+            },
+            onFailure : (err) =>
+            {
+              reject({ code : 4, data : err });
+            }
+          });
+        },
+        mfaRequired : (challengeName : any, challengeParameters : any) =>
+        {
+          resolve({ code : 2, data : null });
         }
       });
     }));
@@ -304,6 +335,34 @@ export class CognitoService
   }
 
   // -------------------------------------------------------------------------------------------
+  // NOTE: MFA ---------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  public sendMFACode(code : string, mfaType : string = null) : any
+  {
+    // TODO: dynamic code
+    // SOFTWARE_TOKEN_MFA
+    // SMS_MFA
+    let cognitoUser = this.getCurrentUser();
+    return Observable.fromPromise(new Promise((resolve, reject) =>
+    {
+      cognitoUser.sendMFACode(code,
+      {
+        onSuccess : (session : AWSCognito.CognitoUserSession) =>
+        {
+          this.updateTokens(session);
+          resolve(session);
+        },
+        onFailure: (err) =>
+        {
+          console.error('CognitoService : sendMFACode -> sendMFACode', err);
+          reject(err);
+        }
+      }, mfaType);
+    }));
+  }
+
+  // -------------------------------------------------------------------------------------------
   // NOTE: Password ----------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
@@ -330,20 +389,27 @@ export class CognitoService
   public changePassword(newPassword : string, requiredAttributeData : any = {}) : Observable<any>
   {
     let cognitoUser = this.getCurrentUser();
+    if(this.cognitoUser)
+      cognitoUser = this.cognitoUser;
+
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
       cognitoUser.completeNewPasswordChallenge(newPassword, requiredAttributeData,
       {
         onSuccess : (session : AWSCognito.CognitoUserSession) =>
         {
-          resolve(session);
+          this.updateTokens(session);
+          resolve({ code : 1, data : session });
         },
         onFailure : (err) =>
         {
           console.error('CognitoService : changePassword -> completeNewPasswordChallenge', err);
           reject(err);
+        },
+        mfaRequired : (challengeName : any, challengeParameters : any) =>
+        {
+          resolve({ code : 2, data : null });
         }
-        // TODO: Add MFA
       });
     }));
   }
@@ -354,19 +420,21 @@ export class CognitoService
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
       cognitoUser.forgotPassword({
-        onSuccess : (res) =>
+        onSuccess : (data) =>
         {
-          console.log('CognitoService : forgotPassword -> forgotPassword', res);
-          resolve(res);
+          // NOTE: onSuccess is called if there is no inputVerificationCode callback
+          // NOTE: https://github.com/amazon-archives/amazon-cognito-identity-js/issues/324
+          // NOTE: https://github.com/amazon-archives/amazon-cognito-identity-js/issues/323
+          resolve({ code : 1, data : data });
         },
         onFailure : (err) =>
         {
           console.error('CognitoService : forgotPassword -> forgotPassword', err);
           reject(err);
         },
-        inputVerificationCode()
+        inputVerificationCode : (data) =>
         {
-          resolve(1);
+          resolve({ code : 2, data : data });
         }
       });
     }));
