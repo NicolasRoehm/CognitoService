@@ -74,7 +74,7 @@ export class AppComponent
     password = $event.password;
 
     // Show loader
-    this.cognitoService.authenticateUserPool(login, password).subscribe(res =>
+    this.cognitoService.authenticateUser(login, password).subscribe(res =>
     {
       console.log('Authenticated !');
       console.log(this.cognitoService.getIdToken());
@@ -85,17 +85,17 @@ export class AppComponent
     {
       // Hide loader
       // First connection
-      if(err === -1)
-        this.loginForm.openDialog(true);
+      if(err.code === 1)
+        this.loginForm.showPwdForm(true);
 
       // Error
-      if(err === -2)
+      if(err.code === 2)
         this.snackBar.open(this.translate.instant('ERROR_LOGIN_FAILED'), 'X');
     });
   }
 
-  public forgottenPassword($event : any) : void
-  { // NOTE: onClickForgottenPassword
+  public forgotPassword($event : any) : void
+  { // NOTE: onClickForgotPassword
     if(!$event)
       return;
 
@@ -110,7 +110,7 @@ export class AppComponent
 
     this.cognitoService.forgotPassword(login).subscribe((res : any) =>
     {
-      this.loginForm.openDialog(false);
+      this.loginForm.showPwdForm(false);
     },
     err =>
     {
@@ -151,7 +151,7 @@ export class AppComponent
 
     this.cognitoService.changePassword(newPassword).subscribe(res =>
     {
-      this.loginForm.closeDialog();
+      this.loginForm.hidePwdForm();
       this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
     },
     err =>
@@ -172,7 +172,7 @@ export class AppComponent
 
     this.cognitoService.confirmPassword(newPassword, verifCode).subscribe(res =>
     {
-      this.loginForm.closeDialog();
+      this.loginForm.hidePwdForm();
       this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
     },
     err =>
