@@ -42,6 +42,8 @@ export class CognitoService
 
   public storagePrefix : string = 'CognitoService';
 
+  private cognitoUser : AWSCognito.CognitoUser;
+
   constructor
   (
     @Inject('cognitoConst') @Optional() public cognitoConst ?: any
@@ -227,8 +229,9 @@ export class CognitoService
     {
       cognitoUser.authenticateUser(authenticationDetails,
       {
-        newPasswordRequired : (userAttributes, requiredAttributes) =>
+        newPasswordRequired : (userAttributes : any, requiredAttributes : any) =>
         {
+          this.cognitoUser = cognitoUser; // NOTE: https://github.com/amazon-archives/amazon-cognito-identity-js/issues/365
           reject({ code : 1, data : null });
         },
         onSuccess : (session : AWSCognito.CognitoUserSession) =>
@@ -386,6 +389,9 @@ export class CognitoService
   public changePassword(newPassword : string, requiredAttributeData : any = {}) : Observable<any>
   {
     let cognitoUser = this.getCurrentUser();
+    if(this.cognitoUser)
+      cognitoUser = this.cognitoUser;
+
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
       cognitoUser.completeNewPasswordChallenge(newPassword, requiredAttributeData,
@@ -414,19 +420,21 @@ export class CognitoService
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
       cognitoUser.forgotPassword({
-        onSuccess : (res) =>
+        onSuccess : (data) =>
         {
-          console.log('CognitoService : forgotPassword -> forgotPassword', res);
-          resolve(res);
+          // NOTE: onSuccess is called if there is no inputVerificationCode callback
+          // NOTE: https://github.com/amazon-archives/amazon-cognito-identity-js/issues/324
+          // NOTE: https://github.com/amazon-archives/amazon-cognito-identity-js/issues/323
+          resolve({ code : 1, data : data });
         },
         onFailure : (err) =>
         {
           console.error('CognitoService : forgotPassword -> forgotPassword', err);
           reject(err);
         },
-        inputVerificationCode()
+        inputVerificationCode : (data) =>
         {
-          resolve(1);
+          resolve({ code : 2, data : data });
         }
       });
     }));

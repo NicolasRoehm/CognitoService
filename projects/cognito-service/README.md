@@ -66,7 +66,7 @@ ng serve
 ## Roadmap
 
 ### In Progress
-- MFA
+- Angular 6 demo
 
 ### Planning
 - Facebook

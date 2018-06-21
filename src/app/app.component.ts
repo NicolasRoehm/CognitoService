@@ -68,18 +68,21 @@ export class AppComponent
     if(!$event)
       return;
 
-    let login    : string = null;
+    let username : string = null;
     let password : string = null;
-    login    = $event.login;
+    username = $event.username;
     password = $event.password;
 
     // Show loader
-    this.cognitoService.authenticateUser(login, password).subscribe(res =>
+    this.cognitoService.authenticateUser(username, password).subscribe(res =>
     {
-      console.log('Authenticated !');
-      console.log(this.cognitoService.getIdToken());
-      // this.askRefresh(); // Run once
-      this.runLoop(); // Then run loop
+      // Success login
+      if(res.code === 1)
+        this.onSuccessLogin();
+
+      // MFA required
+      if(res.code === 2)
+        this.loginForm.showMfaForm();
     },
     err =>
     {
@@ -90,27 +93,43 @@ export class AppComponent
 
       // Error
       if(err.code === 2)
+      {
+        console.error('AppComponent : login -> authenticateUser', err);
         this.snackBar.open(this.translate.instant('ERROR_LOGIN_FAILED'), 'X');
+      }
+
+      // MFA setup : associate secret code
+      if(err.code === 3)
+        this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
+
+      // MFA setup : error
+      if(err.code === 4)
+      {
+        console.error('AppComponent : login -> authenticateUser', err);
+        this.snackBar.open(err.data, 'X');
+      }
     });
   }
 
   public forgotPassword($event : any) : void
-  { // NOTE: onClickForgotPassword
+  {
     if(!$event)
       return;
 
-    let login : string = null;
-    login = $event.login;
+    let username : string = null;
+    username = $event.username;
 
-    if(!login)
+    if(!username)
     {
-      this.snackBar.open(this.translate.instant('ERROR_LOGIN_REQUIRED'), 'X');
+      this.snackBar.open(this.translate.instant('ERROR_USR_REQUIRED'), 'X');
       return;
     }
 
-    this.cognitoService.forgotPassword(login).subscribe((res : any) =>
+    this.cognitoService.forgotPassword(username).subscribe(res =>
     {
-      this.loginForm.showPwdForm(false);
+      // Verification code
+      if(res.code === 2)
+        this.loginForm.showPwdForm(false);
     },
     err =>
     {
@@ -137,6 +156,7 @@ export class AppComponent
           break;
       }
 
+      console.error('AppComponent : forgotPassword -> forgotPassword', err);
       this.snackBar.open(errorMsg, 'X');
     });
   }
@@ -146,16 +166,25 @@ export class AppComponent
     if(!$event)
       return;
 
+    let username    : string = null;
     let newPassword : string = null;
-    newPassword = $event.newPassword;
+    username    = $event.username;
+    newPassword = $event.password;
 
     this.cognitoService.changePassword(newPassword).subscribe(res =>
     {
-      this.loginForm.hidePwdForm();
+      // Success
+      if(res.code === 1)
+        this.loginForm.hidePwdForm();
+      // MFA required
+      if(res.code === 2)
+        this.loginForm.showMfaForm();
+
       this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
     },
     err =>
     {
+      console.error('AppComponent : firstPassword -> changePassword', err);
       this.snackBar.open(this.translate.instant('ERROR_AMAZON_POLICY'), 'x');
     });
   }
@@ -167,8 +196,8 @@ export class AppComponent
 
     let newPassword : string = null;
     let verifCode   : string = null;
-    newPassword = $event.newPassword;
-    verifCode   = $event.verifCode;
+    newPassword = $event.password;
+    verifCode   = $event.code;
 
     this.cognitoService.confirmPassword(newPassword, verifCode).subscribe(res =>
     {
@@ -194,6 +223,7 @@ export class AppComponent
           break;
       }
 
+      console.error('AppComponent : lostPassword -> confirmPassword', err);
       this.snackBar.open(errorMsg, 'x');
     });
   }
@@ -253,7 +283,7 @@ export class AppComponent
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      this.http.get(this.apiURL + 'business_profile', { headers : headers }).subscribe(
+      this.http.get(this.apiURL + 'business-profile', { headers : headers }).subscribe(
       (res : Response) =>
       {
         let result = res.json();
@@ -266,6 +296,18 @@ export class AppComponent
         return reject(err);
       });
     }));
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Private functions -------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  private onSuccessLogin() : void
+  {
+    console.log('Authenticated !');
+    console.log(this.cognitoService.getIdToken());
+    // this.askRefresh(); // Run once
+    // this.runLoop(); // Then run loop
   }
 
 }

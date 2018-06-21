@@ -71,7 +71,6 @@ ng serve
 
 ### In Progress
 - Angular 6 demo
-- MFA
 
 ### Planning
 - Facebook
