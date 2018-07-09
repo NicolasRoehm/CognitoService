@@ -366,9 +366,11 @@ export class CognitoService
   // NOTE: Password ----------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public confirmPassword(newPassword : string, verificationCode : string) : Observable<any>
+  public confirmPassword(username : string, newPassword : string, verificationCode : string) : Observable<any>
   {
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser : AWSCognito.CognitoUser = null;
+    cognitoUser = this.getCognitoUser(username);
+
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
       cognitoUser.confirmPassword(verificationCode, newPassword,
@@ -388,7 +390,8 @@ export class CognitoService
 
   public changePassword(newPassword : string, requiredAttributeData : any = {}) : Observable<any>
   {
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser : AWSCognito.CognitoUser = null;
+    cognitoUser = this.getCurrentUser();
     if(this.cognitoUser)
       cognitoUser = this.cognitoUser;
 
@@ -416,7 +419,8 @@ export class CognitoService
 
   public forgotPassword(username : string) : Observable<any>
   {
-    let cognitoUser = this.getCognitoUser(username);
+    let cognitoUser : AWSCognito.CognitoUser = null;
+    cognitoUser = this.getCognitoUser(username);
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
       cognitoUser.forgotPassword({
