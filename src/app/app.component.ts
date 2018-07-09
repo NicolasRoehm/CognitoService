@@ -194,14 +194,16 @@ export class AppComponent
     if(!$event)
       return;
 
+    let username    : string = null;
     let newPassword : string = null;
     let verifCode   : string = null;
+    username    = $event.username;
     newPassword = $event.password;
-    verifCode   = $event.code;
+    verifCode   = $event.verificationCode;
 
-    this.cognitoService.confirmPassword(newPassword, verifCode).subscribe(res =>
+    this.cognitoService.confirmPassword(username, newPassword, verifCode).subscribe(res =>
     {
-      this.loginForm.hidePwdForm();
+      this.loginForm.hidePwdForm(newPassword);
       this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
     },
     err =>
