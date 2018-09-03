@@ -1,7 +1,7 @@
 {
   "name": "cognito-service-app",
   "description": "JavaScript service for AWS Cognito with Angular 6",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "author": "Nicolas Roehm <nicolas.roehm@gmail.com>",
   "license": "MIT",
   "private": false,

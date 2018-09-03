@@ -1,6 +1,6 @@
 <div class="container">
   <div class="row mt-5">
-    <div class="col">
+    <div class="col" *ngIf="!isAuthenticated">
       <!-- NOTE: Login -->
       <cal-login-form #loginForm 
         (login)="login($event)" 
@@ -9,8 +9,7 @@
         (sendResetPwd)="lostPassword($event)">
       </cal-login-form>
     </div>
-    <div class="col">
-      <!-- NOTE: Request -->
+    <!-- <div class="col">
       <div class="row">
         <div class="col">
           <h3>Refresh</h3>
@@ -29,14 +28,17 @@
           </ul>
         </div>
       </div>
-    </div>
-    <div class="col" *ngIf="cognitoService.isAuthenticated()">
+    </div> -->
+    <div class="col" *ngIf="isAuthenticated">
       <!-- NOTE: Logout -->
       <button mat-button color="primary" (click)="logout()">
         Logout
       </button>
-      <button mat-button color="accent" (click)="request()">
+      <button mat-button color="accent" (click)="requestBP()">
         Request
+      </button>
+      <button mat-button color="accent" (click)="refresh()">
+        Refresh
       </button>
     </div>
   </div>
