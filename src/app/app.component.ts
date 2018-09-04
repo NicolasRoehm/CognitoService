@@ -1,8 +1,12 @@
 // Angular modules
 import { Component }          from '@angular/core';
 import { ViewChild }          from '@angular/core';
+import { ChangeDetectorRef }  from '@angular/core';
 import { MatSnackBar }        from '@angular/material';
 import { Http }               from '@angular/http';
+import { HttpParams }         from '@angular/common/http';
+import { HttpHeaders }        from '@angular/common/http';
+import { HttpClient }         from '@angular/common/http';
 import { Headers }            from '@angular/http';
 import { Response }           from '@angular/http';
 import { HttpErrorResponse }  from '@angular/common/http';
@@ -20,6 +24,8 @@ import { AuthError }          from './auth.enum';
 
 // Services
 import { CognitoService }     from 'cognito-service';
+import { AuthType }           from 'cognito-service';
+import { RespType }           from 'cognito-service';
 
 import { CognitoConst }       from './cognito.const';
 
@@ -33,18 +39,20 @@ export class AppComponent
 
   @ViewChild('loginForm') loginForm : LoginFormComponent;
 
-  public apiURL   : string = '';
+  public apiURL      : string = '';
 
   public refreshList : any = [];
   public requestList : any = [];
 
-  public cognitoService : CognitoService;
+  public cognitoService  : CognitoService;
+  public isAuthenticated : boolean = false;
 
   constructor
   (
     public  snackBar  : MatSnackBar,
-    private http      : Http,
-    private translate : TranslateService
+    private http      : HttpClient,
+    private translate : TranslateService,
+    private cdRef     : ChangeDetectorRef,
   )
   {
     this.cognitoService = new CognitoService(CognitoConst);
@@ -52,6 +60,9 @@ export class AppComponent
     translate.setDefaultLang('en');
     // NOTE: The lang to use, if the lang isn't available, it will use the current loader to get them
     translate.use('en');
+
+    this.isAuthenticated = this.cognitoService.isAuthenticated();
+    console.log(this.isAuthenticated);
   }
 
   // -------------------------------------------------------------------------------
@@ -61,6 +72,7 @@ export class AppComponent
   public logout() : void
   {
     this.cognitoService.signOut();
+    this.isAuthenticated = false;
   }
 
   public login($event : any) : void
@@ -77,33 +89,34 @@ export class AppComponent
     this.cognitoService.authenticateUser(username, password).subscribe(res =>
     {
       // Success login
-      if(res.code === 1)
+      if(res.type === RespType.ON_SUCCESS)
         this.onSuccessLogin();
 
+      // First connection
+      if(res.type === RespType.NEW_PASSWORD_REQUIRED)
+        this.loginForm.showPwdForm(true);
+
       // MFA required
-      if(res.code === 2)
+      if(res.type === RespType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
+
+      // MFA setup : associate secret code
+      if(res.type === RespType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
+        this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
     },
     err =>
     {
       // Hide loader
-      // First connection
-      if(err.code === 1)
-        this.loginForm.showPwdForm(true);
 
       // Error
-      if(err.code === 2)
+      if(err.type === RespType.ON_FAILURE)
       {
         console.error('AppComponent : login -> authenticateUser', err);
         this.snackBar.open(this.translate.instant('ERROR_LOGIN_FAILED'), 'X');
       }
 
-      // MFA setup : associate secret code
-      if(err.code === 3)
-        this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
-
       // MFA setup : error
-      if(err.code === 4)
+      if(err.type === RespType.MFA_SETUP_ON_FAILURE)
       {
         console.error('AppComponent : login -> authenticateUser', err);
         this.snackBar.open(err.data, 'X');
@@ -128,14 +141,14 @@ export class AppComponent
     this.cognitoService.forgotPassword(username).subscribe(res =>
     {
       // Verification code
-      if(res.code === 2)
+      if(res.type === RespType.INPUT_VERIFICATION_CODE)
         this.loginForm.showPwdForm(false);
     },
     err =>
     {
       let errorMsg  : string = null;
       let errorCode : string = null;
-      errorCode = err.code;
+      errorCode = err.data;
 
       switch(errorCode)
       { // NOTE: This example use AWS errors
@@ -174,10 +187,10 @@ export class AppComponent
     this.cognitoService.changePassword(newPassword).subscribe(res =>
     {
       // Success
-      if(res.code === 1)
+      if(res.type === RespType.ON_SUCCESS)
         this.loginForm.hidePwdForm();
       // MFA required
-      if(res.code === 2)
+      if(res.type === RespType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
 
       this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
@@ -210,7 +223,7 @@ export class AppComponent
     {
       let errorMsg  : string = null;
       let errorCode : string = null;
-      errorCode = err.code;
+      errorCode = err.data;
 
       switch(errorCode)
       { // NOTE: This example use AWS errors
@@ -234,42 +247,12 @@ export class AppComponent
   // NOTE: Refresh session ---------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public runLoop() : void
+  public refresh() : void
   {
-    let every : number = null;
-    every = 1740000; // 15 min (900000) or 29 min (1740000)
-    setInterval(() => {
-      this.askRefresh();
-    }, every);
-  }
-
-  public askRefresh() : void
-  {
-    let refreshResp : any    = null;
-    let time        : string =  null;
-
-    time = new Date().toLocaleString();
-
-    refreshResp = this.cognitoService.refreshSession();
-
-    this.refreshList.push({ time: time, response : refreshResp });
-  }
-
-  public request() : void
-  {
-    let token       : string = null;
-    let time        : string = null;
-
-    time  = new Date().toLocaleString();
-    token = this.cognitoService.getIdToken();
-
-    this.requestBP(token).subscribe(res =>
-    {
-      this.requestList.push({ time: time, response : res });
-    },
-    err =>
-    {
-      console.error('AppComponent : request -> requestBP', err);
+    this.cognitoService.refreshCognitoSession().subscribe(res => {
+      console.log(res);
+    }, err => {
+      console.log(err);
     });
   }
 
@@ -277,24 +260,27 @@ export class AppComponent
   // NOTE: Api gateway request -----------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public requestBP(token : string) : Observable<any>
+  public requestBP() : Observable<any>
   {
-    let headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    headers.append('Authorization', token);
+    let token = this.cognitoService.getIdToken();
+    let params  : HttpParams  = null;
+    let headers : HttpHeaders = null;
+    let options : any         = {};
+    params  = new HttpParams();
+    headers = new HttpHeaders({
+      'Content-Type'        : 'application/json',
+      'Authorization'       : token
+    });
+    options.headers = headers;
+    options.params  = params;
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      this.http.get(this.apiURL + 'business-profile', { headers : headers }).subscribe(
-      (res : Response) =>
-      {
-        let result = res.json();
-        console.log(result);
-        return resolve(result);
-      },
-      (err : HttpErrorResponse) =>
-      {
-        console.error('CognitoService : requestBP', err);
+      this.http.get('YOUR_API_URL', options).subscribe((res : ArrayBuffer) => {
+        console.log(res);
+        return resolve(res);
+      }, (err : HttpErrorResponse) => {
+        console.error('AppComponent : requestBP', err);
         return reject(err);
       });
     }));
@@ -307,9 +293,10 @@ export class AppComponent
   private onSuccessLogin() : void
   {
     console.log('Authenticated !');
+    console.log(this.cognitoService.getUsername());
+    console.log(this.cognitoService.getProvider());
     console.log(this.cognitoService.getIdToken());
-    // this.askRefresh(); // Run once
-    // this.runLoop(); // Then run loop
+    this.isAuthenticated = true;
   }
 
 }
