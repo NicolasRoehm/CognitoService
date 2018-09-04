@@ -148,7 +148,7 @@ export class AppComponent
     {
       let errorMsg  : string = null;
       let errorCode : string = null;
-      errorCode = err.code;
+      errorCode = err.data;
 
       switch(errorCode)
       { // NOTE: This example use AWS errors
@@ -223,7 +223,7 @@ export class AppComponent
     {
       let errorMsg  : string = null;
       let errorCode : string = null;
-      errorCode = err.code;
+      errorCode = err.data;
 
       switch(errorCode)
       { // NOTE: This example use AWS errors

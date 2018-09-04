@@ -15,8 +15,6 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/observable/fromPromise';
 import { Observable }        from 'rxjs/Observable';
-import { Subscription }      from 'rxjs/Subscription';
-import { timer }             from 'rxjs';
 import * as AWS              from 'aws-sdk';
 import * as AWSCognito       from 'amazon-cognito-identity-js';
 
@@ -407,12 +405,12 @@ export class CognitoService
         onSuccess : (session : AWSCognito.CognitoUserSession) =>
         {
           this.updateTokens(session);
-          return resolve(session);
+          return resolve({ type : RespType.ON_SUCCESS, data : session });
         },
         onFailure : (err : any) =>
         {
           console.error('CognitoService : sendMFACode -> sendMFACode', err);
-          return reject(err);
+          return reject({ type : RespType.ON_FAILURE, data : err });
         }
       }, mfaType);
     }));
@@ -518,22 +516,22 @@ export class CognitoService
   public adminCreateUser(username : string, password : string) : Observable<any>
   {
     this.setAdmin();
-    var params : AWS.CognitoIdentityServiceProvider.AdminCreateUserRequest = {
+    let params : AWS.CognitoIdentityServiceProvider.AdminCreateUserRequest = {
       UserPoolId        : this.poolData.UserPoolId,
       Username          : username,
       TemporaryPassword : password
     };
 
-    var cognitoidentityserviceprovider = new AWS.CognitoIdentityServiceProvider();
+    let cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider();
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      cognitoidentityserviceprovider.adminCreateUser(params, (err : AWS.AWSError, res : AWS.CognitoIdentityServiceProvider.AdminCreateUserResponse) =>
+      cognitoIdentityServiceProvider.adminCreateUser(params, (err : AWS.AWSError, res : AWS.CognitoIdentityServiceProvider.AdminCreateUserResponse) =>
       {
         if(res)
-          return resolve(res);
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
         console.error('CognitoService : adminCreateUser -> adminCreateUser', err);
-        return reject(err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
       });
     }));
   }
@@ -546,16 +544,16 @@ export class CognitoService
       Username   : username
     };
 
-    let cognitoidentityserviceprovider = new AWS.CognitoIdentityServiceProvider();
+    let cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider();
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      cognitoidentityserviceprovider.adminDeleteUser(params, (err : AWS.AWSError, res : any) =>
+      cognitoIdentityServiceProvider.adminDeleteUser(params, (err : AWS.AWSError, res : any) =>
       {
         if(res)
-          return resolve(res);
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
         console.error('CognitoService : adminDeleteUser -> adminDeleteUser', err);
-        return reject(err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
       });
     }));
   }
@@ -568,16 +566,16 @@ export class CognitoService
       Username   : username
     };
 
-    let cognitoidentityserviceprovider = new AWS.CognitoIdentityServiceProvider();
+    let cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider();
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      cognitoidentityserviceprovider.adminResetUserPassword(params, (err : AWS.AWSError, res : AWS.CognitoIdentityServiceProvider.AdminResetUserPasswordResponse) =>
+      cognitoIdentityServiceProvider.adminResetUserPassword(params, (err : AWS.AWSError, res : AWS.CognitoIdentityServiceProvider.AdminResetUserPasswordResponse) =>
       {
         if(res)
-          return resolve(res);
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
         console.error('CognitoService : adminResetUserPassword -> adminResetUserPassword', err);
-        return reject(err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
       });
     }));
   }
@@ -585,22 +583,22 @@ export class CognitoService
   public adminUpdateUserAttributes(username : string, userAttributes : AWS.CognitoIdentityServiceProvider.Types.AttributeListType) : Observable<any>
   {
     this.setAdmin();
-    var params : AWS.CognitoIdentityServiceProvider.AdminUpdateUserAttributesRequest = {
+    let params : AWS.CognitoIdentityServiceProvider.AdminUpdateUserAttributesRequest = {
       UserPoolId     : this.poolData.UserPoolId,
       Username       : username,
       UserAttributes : userAttributes
     };
 
-    var cognitoidentityserviceprovider = new AWS.CognitoIdentityServiceProvider();
+    let cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider();
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      cognitoidentityserviceprovider.adminUpdateUserAttributes(params, (err : AWS.AWSError, res : AWS.CognitoIdentityServiceProvider.AdminUpdateUserAttributesResponse) =>
+      cognitoIdentityServiceProvider.adminUpdateUserAttributes(params, (err : AWS.AWSError, res : AWS.CognitoIdentityServiceProvider.AdminUpdateUserAttributesResponse) =>
       {
         if(res)
-          return resolve(res);
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
         console.error('CognitoService : adminUpdateUserAttributes -> adminUpdateUserAttributes', err);
-        return reject(err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
       });
     }));
   }
@@ -634,10 +632,10 @@ export class CognitoService
         if(res)
         {
           this.updateTokens(res);
-          return resolve(res);
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
         }
         console.error('CognitoService : refreshSession -> refreshSession', err);
-        return reject(err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
       });
     }));
   }
