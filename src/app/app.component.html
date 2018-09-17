@@ -9,32 +9,12 @@
         (sendResetPwd)="lostPassword($event)">
       </cal-login-form>
     </div>
-    <!-- <div class="col">
-      <div class="row">
-        <div class="col">
-          <h3>Refresh</h3>
-          <ul class="list-unstyled d-block">
-            <li *ngFor="let refresh of refreshList">
-              {{ refresh.time }} {{ refresh.response }}
-            </li>
-          </ul>
-        </div>
-        <div class="col">
-          <h3>Response</h3>
-          <ul class="list-unstyled d-block">
-            <li *ngFor="let request of requestList">
-              {{ request.time }} {{ request.response }}
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div> -->
     <div class="col" *ngIf="isAuthenticated">
       <!-- NOTE: Logout -->
       <button mat-button color="primary" (click)="logout()">
         Logout
       </button>
-      <button mat-button color="accent" (click)="requestBP()">
+      <button mat-button color="accent" (click)="request()">
         Request
       </button>
       <button mat-button color="accent" (click)="refresh()">

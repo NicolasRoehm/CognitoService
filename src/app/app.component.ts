@@ -3,17 +3,13 @@ import { Component }          from '@angular/core';
 import { ViewChild }          from '@angular/core';
 import { ChangeDetectorRef }  from '@angular/core';
 import { MatSnackBar }        from '@angular/material';
-import { Http }               from '@angular/http';
 import { HttpParams }         from '@angular/common/http';
 import { HttpHeaders }        from '@angular/common/http';
 import { HttpClient }         from '@angular/common/http';
-import { Headers }            from '@angular/http';
-import { Response }           from '@angular/http';
 import { HttpErrorResponse }  from '@angular/common/http';
 
 // External modules
 import { Observable }         from 'rxjs/Observable';
-import { Subscription }       from 'rxjs/Subscription';
 import { TranslateService }   from '@ngx-translate/core';
 
 // Components
@@ -27,6 +23,7 @@ import { CognitoService }     from 'cognito-service';
 import { AuthType }           from 'cognito-service';
 import { RespType }           from 'cognito-service';
 
+// Consts
 import { CognitoConst }       from './cognito.const';
 
 @Component({
@@ -44,7 +41,7 @@ export class AppComponent
   public refreshList : any = [];
   public requestList : any = [];
 
-  public cognitoService  : CognitoService;
+  public cognitoService  : CognitoService = new CognitoService(CognitoConst);
   public isAuthenticated : boolean = false;
 
   constructor
@@ -55,7 +52,6 @@ export class AppComponent
     private cdRef     : ChangeDetectorRef,
   )
   {
-    this.cognitoService = new CognitoService(CognitoConst);
     // NOTE: This language will be used as a fallback when a translation isn't found in the current language
     translate.setDefaultLang('en');
     // NOTE: The lang to use, if the lang isn't available, it will use the current loader to get them
@@ -184,7 +180,7 @@ export class AppComponent
     username    = $event.username;
     newPassword = $event.password;
 
-    this.cognitoService.changePassword(newPassword).subscribe(res =>
+    this.cognitoService.newPasswordRequired(newPassword).subscribe(res =>
     {
       // Success
       if(res.type === RespType.ON_SUCCESS)
@@ -214,7 +210,7 @@ export class AppComponent
     newPassword = $event.password;
     verifCode   = $event.verificationCode;
 
-    this.cognitoService.confirmPassword(username, newPassword, verifCode).subscribe(res =>
+    this.cognitoService.confirmPassword(newPassword, verifCode).subscribe(res =>
     {
       this.loginForm.hidePwdForm(newPassword);
       this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
@@ -260,7 +256,7 @@ export class AppComponent
   // NOTE: Api gateway request -----------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public requestBP() : Observable<any>
+  public request() : Observable<any>
   {
     let token = this.cognitoService.getIdToken();
     let params  : HttpParams  = null;
@@ -280,7 +276,7 @@ export class AppComponent
         console.log(res);
         return resolve(res);
       }, (err : HttpErrorResponse) => {
-        console.error('AppComponent : requestBP', err);
+        console.error('AppComponent : request', err);
         return reject(err);
       });
     }));

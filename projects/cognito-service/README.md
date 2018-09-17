@@ -1,5 +1,5 @@
 # Manage your users with AWS Cognito
-> This library is a wrapper around the client library `aws-sdk` and `amazon-cognito-identity-js` to easily manage your Cognito User Pool.
+This Angular 6 Library is a wrapper around the client libraries `aws-sdk` and `amazon-cognito-identity-js` to easily manage your Cognito User Pool.
 
 ## Note
 You can use this service with your own components or with our [generic authentication component](https://github.com/Caliatys/LoginComponent/).
@@ -11,13 +11,26 @@ npm install @caliatys/cognito-service --save
 ```
 
 Copy/paste [src/app/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/cognito.const.ts) and replace the parameters with your resource identifiers.
+```typescript
+export const CognitoConst = {
+  poolData : {
+    UserPoolId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPool
+    ClientId   : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPoolClient
+    Paranoia   : 7 // an integer between 1 - 10
+  },
+  // Admin (optional)
+  region           : 'eu-west-1', // Region matching CognitoUserPool region
+  adminAccessKeyId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX',
+  adminSecretKeyId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX'
+};
+```
 
 Import `CognitoService` and `CognitoConst` inside a component :
 ```typescript
 import { CognitoService } from '@caliatys/cognito-service';
 import { CognitoConst }   from './cognito.const';
-import { RespType }       from '@caliatys/cognito-service'; // Enum used to identify the responses (onSucces, onFailure, ...)
-import { AuthType }       from '@caliatys/cognito-service'; // Enum used to identify the providers (google, facebook, ...)
+import { RespType }       from '@caliatys/cognito-service'; // Response enum (onSucces, onFailure, ...)
+import { AuthType }       from '@caliatys/cognito-service'; // Provider enum (google, facebook, ...)
 
 @Component({
   selector    : 'app-root',
@@ -32,9 +45,36 @@ export class AppComponent
 
 ## Methods
 
-### Login
+### Registration
 
-Login a user :
+#### Signup
+Signup a new user :
+```typescript
+this.cognitoService.signUp('username', 'password').subscribe(res => {
+
+  let signUpResult : AWSCognito.ISignUpResult = res.data;
+
+}, err => { });
+```
+
+#### Confirm registration
+Depending on your settings, email confirmation may be required.
+In that case, the following function must be called :
+```typescript
+this.cognitoService.confirmRegistration().subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
+```
+
+#### Resend confirmation code
+```typescript
+this.cognitoService.resendConfirmationCode();
+```
+
+#### Login
+Login an existing user :
 ```typescript
 this.cognitoService.authenticateUser('username', 'password').subscribe(res => {
 
@@ -65,59 +105,7 @@ this.cognitoService.authenticateUser('username', 'password').subscribe(res => {
 });
 ```
 
-#### Send MFA code
-
-```typescript
-this.cognitoService.sendMFACode('mfaCode', 'SOFTWARE_TOKEN_MFA or SMS_MFA').subscribe(res => {
-
-  let session : AWSCognito.CognitoUserSession = res.data;
-
-}, err => { });
-```
-
-### Forgot password
-
-Start a forgot password flow.
-Cognito will send a `confirmationCode` to one of the user's confirmed contact methods (email or SMS) to be used in the `confirmPassword` method below.
-```typescript
-this.cognitoService.forgotPassword('username').subscribe(res => {
-
-  // Verification code
-  if(res.type === RespType.INPUT_VERIFICATION_CODE)
-
-}, err => { });
-```
-
-#### Resend confirmation code
-```typescript
-this.cognitoService.resendConfirmationCode();
-```
-
-### Confirm password
-Finish the forgot password flow.
-```typescript
-this.cognitoService.confirmPassword('username', 'newPassword', 'confirmationCode').subscribe(res => {
-  // Success
-}, err => {
-  // Error
-});
-```
-
-### Change password
-Use this method to change the user's password or to finish the first connection flow.
-```typescript
-this.cognitoService.changePassword('newPassword').subscribe(res => {
-
-  // Success
-  if(res.type === RespType.ON_SUCCESS)
-
-  // MFA required
-  if(res.type === RespType.MFA_REQUIRED)
-
-}, err => { });
-```
-
-### Refresh session
+#### Refresh session
 Generate new refreshToken, idToken and accessToken with a new expiry date.
 If successful, you retrieve 3 auth tokens and the associated expiration dates (same as login).
 ```typescript
@@ -128,14 +116,95 @@ this.cognitoService.refreshCognitoSession().subscribe(res => {
 }, err => { });
 ```
 
-### Logout
+#### Logout
 ```typescript
 this.cognitoService.signOut();
+```
+
+### MFA
+
+#### Send MFA code
+Complete the `MFA_REQUIRED` sent by the `login` or by the `newPasswordRequired` method using the mfaCode received by SMS to finish the login flow.
+```typescript
+this.cognitoService.sendMFACode('mfaCode', 'SOFTWARE_TOKEN_MFA or SMS_MFA').subscribe(res => {
+
+  let session : AWSCognito.CognitoUserSession = res.data;
+
+}, err => { });
+```
+
+#### Get MFA status
+If MFA is enabled for this user, retrieve its options. Otherwise, returns null.
+```typescript
+this.cognitoService.getMFAOptions().subscribe(res => {
+
+  let mfaOptions : AWSCognito.MFAOption[] = res.data;
+
+}, err => { });
+```
+
+#### Enable or Disable MFA
+```typescript
+let enableMfa : boolean = true;
+this.cognitoService.setMfa(enableMfa).subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
+```
+
+### Password
+
+#### New password required
+Complete the `NEW_PASSWORD_REQUIRED` response sent by the `login` method to finish the first connection flow.
+```typescript
+this.cognitoService.newPasswordRequired('newPassword').subscribe(res => {
+
+  // Success
+  if(res.type === RespType.ON_SUCCESS)
+
+  // MFA required
+  if(res.type === RespType.MFA_REQUIRED)
+
+}, err => { });
+```
+
+#### Forgot password
+Start a forgot password flow.
+Cognito will send a `verificationCode` to one of the user's confirmed contact methods (email or SMS) to be used in the `confirmPassword` method below.
+```typescript
+this.cognitoService.forgotPassword('username').subscribe(res => {
+
+  // Verification code
+  if(res.type === RespType.INPUT_VERIFICATION_CODE)
+
+}, err => { });
+```
+
+#### Confirm password
+Complete the `INPUT_VERIFICATION_CODE` response sent by the `forgotPassword` method to finish the forgot password flow.
+```typescript
+this.cognitoService.confirmPassword('username', 'newPassword', 'verificationCode').subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
+```
+
+#### Change password
+Use this method to change the user's password.
+```typescript
+this.cognitoService.changePassword('oldPassword', 'newPassword').subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
 ```
 
 ## Helpers
 
 ### Is authenticated
+Compare the token expiration date with the current date.
 ```typescript
 let connected : boolean = this.cognitoService.isAuthenticated();
 ```
@@ -227,8 +296,6 @@ ng serve
 "rxjs": "^6.0.0",
 "rxjs-compat": "^6.0.0",
 "amazon-cognito-identity-js": "2.0.6",
-"amazon-cognito-js": "1.1.0",
-"aws-api-gateway-client": "0.2.12",
 "aws-sdk": "2.247.1",
 "@types/gapi": "0.0.35",
 "@types/gapi.auth2": "0.0.47"

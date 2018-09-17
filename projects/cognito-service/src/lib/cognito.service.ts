@@ -7,20 +7,14 @@ import { Optional }          from '@angular/core';
 import { HttpClient }        from '@angular/common/http';
 
 // External modules
-import 'rxjs/add/observable/throw';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
+import { Observable }        from 'rxjs';
 import 'rxjs/add/observable/fromPromise';
-import { Observable }        from 'rxjs/Observable';
 import * as AWS              from 'aws-sdk';
 import * as AWSCognito       from 'amazon-cognito-identity-js';
 
 // Internal modules
-import { AuthType } from './enums/auth-type.enum';
-import { RespType } from './enums/resp-type.enum';
+import { AuthType }          from './enums/auth-type.enum';
+import { RespType }          from './enums/resp-type.enum';
 
 @Injectable({
   providedIn : 'root'
@@ -69,9 +63,7 @@ export class CognitoService
     this.adminAccessKeyId    = cognitoConst.adminAccessKeyId;
     this.adminSecretKeyId    = cognitoConst.adminSecretKeyId;
 
-    // if(false)
-    //   this.initGoogle();
-    // this.startRefreshTimer();
+    // this.initGoogle();
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -89,17 +81,6 @@ export class CognitoService
       return false;
     return true;
   }
-
-  // public isAuthenticated() : Observable<boolean>
-  // {
-  //   return Observable.fromPromise(new Promise((resolve, reject) => {
-  //     this.refreshCognitoSession().subscribe(res => {
-  //       return resolve(true);
-  //     }, err => {
-  //       return reject(false);
-  //     });
-  //   }));
-  // }
 
   // NOTE: Username
 
@@ -206,27 +187,49 @@ export class CognitoService
   // NOTE: User --------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public getCognitoUser(username ?: string) : AWSCognito.CognitoUser
+  public setCognitoUser(username : string) : AWSCognito.CognitoUser
   {
-    if(!username)
-      username   = this.getUsername();
-    let userPool = new AWSCognito.CognitoUserPool(this.poolData);
+    let cognitoUser : AWSCognito.CognitoUser = null;
+    let cognitoUserPool = new AWSCognito.CognitoUserPool(this.poolData);
+
     let userData : AWSCognito.ICognitoUserData = {
-      Username : username,
-      Pool     : userPool
+      Username   : username,
+      Pool       : cognitoUserPool
     };
-    return new AWSCognito.CognitoUser(userData);
+    cognitoUser = new AWSCognito.CognitoUser(userData);
+
+    this.cognitoUser = cognitoUser; // Store the user in the service
+    this.setUsername(username); // Store the username in the local storage
+
+    return cognitoUser;
   }
 
-  public getCurrentUser() : AWSCognito.CognitoUser
+  public getCognitoUser(username : string = null) : AWSCognito.CognitoUser
   {
-    let userPool = new AWSCognito.CognitoUserPool(this.poolData);
-    return userPool.getCurrentUser();
+    if(this.cognitoUser)
+      return this.cognitoUser; // User stored in the service
+
+    let cognitoUser : AWSCognito.CognitoUser = null;
+    let cognitoUserPool = new AWSCognito.CognitoUserPool(this.poolData);
+
+    cognitoUser = cognitoUserPool.getCurrentUser(); // Authenticated user
+
+    if(!cognitoUser)
+    {
+      let name : string = null;
+      if(username)
+        name = username; // User sent
+      else
+        name = this.getUsername(); // User stored in local storage
+      cognitoUser = this.setCognitoUser(name);
+    }
+
+    return cognitoUser;
   }
 
-  public getUserAttributes(username : string) : any
+  public getUserAttributes() : any
   {
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser = this.getCognitoUser();
     cognitoUser.getUserAttributes((err : Error, res : AWSCognito.CognitoUserAttribute[]) =>
     {
       if(res)
@@ -237,7 +240,7 @@ export class CognitoService
 
   public deleteAttributes(attributeList : string[]) : any
   {
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser = this.getCognitoUser();
     cognitoUser.deleteAttributes(attributeList, (err : Error, res : string) =>
     {
       if(res)
@@ -248,7 +251,7 @@ export class CognitoService
 
   public getUserData() : any
   {
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser = this.getCognitoUser();
     cognitoUser.getUserData((err : Error, res : AWSCognito.UserData) =>
     {
       if(res)
@@ -257,15 +260,9 @@ export class CognitoService
     });
   }
 
-  // public getUsername() : string
-  // {
-  //   let cognitoUser = this.getCurrentUser();
-  //   return cognitoUser.getUsername();
-  // }
-
   public deleteUser() : any
   {
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser = this.getCognitoUser();
     cognitoUser.deleteUser((err : Error, res : string) =>
     {
       if(res)
@@ -275,9 +272,83 @@ export class CognitoService
   }
 
   // -------------------------------------------------------------------------------------------
-  // NOTE: Authentication ----------------------------------------------------------------------
+  // NOTE: Registration ------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
+  /**
+   * Signup user
+   *
+   * @param username
+   * @param password
+   * @param userAttributes - Optional parameter
+   * @param validationData - Optional parameter
+   */
+  public signUp(username : string, password : string, userAttributes : AWSCognito.CognitoUserAttribute[] = [], validationData : AWSCognito.CognitoUserAttribute[] = []) : Observable<any>
+  {
+    let userPool = new AWSCognito.CognitoUserPool(this.poolData);
+
+    return Observable.fromPromise(new Promise((resolve, reject) =>
+    {
+      userPool.signUp(username, password, userAttributes, validationData, (err : Error, res : AWSCognito.ISignUpResult) => {
+        if(res)
+        {
+          this.setUsername(username);
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
+        }
+
+        console.error('CognitoService : signUp -> signUp', err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
+      });
+    }));
+  }
+
+  /**
+   * Confirm the signup action
+   *
+   * @param verificationCode
+   * @param forceAliasCreation - Optional parameter
+   */
+  public confirmRegistration(verificationCode : string, forceAliasCreation : boolean = false) : Observable<any>
+  {
+    let cognitoUser = this.getCognitoUser();
+
+    return Observable.fromPromise(new Promise((resolve, reject) =>
+    {
+      cognitoUser.confirmRegistration(verificationCode, forceAliasCreation, (err : any, res : any) => {
+        if(res)
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
+
+        console.error('CognitoService : confirmRegistration -> confirmRegistration', err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
+      });
+    }));
+  }
+
+  /**
+   * Resend the signUp confirmation code
+   */
+  public resendConfirmationCode() : Observable<any>
+  {
+    let cognitoUser = this.getCognitoUser();
+
+    return Observable.fromPromise(new Promise((resolve, reject) =>
+    {
+      cognitoUser.resendConfirmationCode((err : Error, res : string) => {
+        if(res)
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
+
+        console.error('CognitoService : resendConfirmationCode -> resendConfirmationCode', err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
+      });
+    }));
+  }
+
+  /**
+   * Login user
+   *
+   * @param username
+   * @param password
+   */
   public authenticateUser(username : string, password : string) : Observable<any>
   {
     let authenticationData : AWSCognito.IAuthenticationDetailsData = {
@@ -294,11 +365,10 @@ export class CognitoService
         newPasswordRequired : (userAttributes : any, requiredAttributes : any) =>
         {
           this.cognitoUser = cognitoUser; // NOTE: https://github.com/amazon-archives/amazon-cognito-identity-js/issues/365
-          return resolve({ type : RespType.NEW_PASSWORD_REQUIRED, data : null });
+          return resolve({ type : RespType.NEW_PASSWORD_REQUIRED, data : { userAttributes : userAttributes, requiredAttributes : requiredAttributes } });
         },
         onSuccess : (session : AWSCognito.CognitoUserSession) =>
         {
-          // this.buildCognitoCredentials();
           this.setUsername(username);
           this.updateTokens(session);
           this.setProvider(AuthType.COGNITO);
@@ -325,58 +395,33 @@ export class CognitoService
         },
         mfaRequired : (challengeName : any, challengeParameters : any) =>
         {
-          return resolve({ type : RespType.MFA_REQUIRED, data : null });
+          return resolve({ type : RespType.MFA_REQUIRED, data : { challengeName : challengeName, challengeParameters : challengeParameters } });
         }
       });
     }));
   }
 
-  // public initGoogle() : void
-  // {
-  //   let params : gapi.auth2.ClientConfig = {
-  //     client_id : this.googleId,
-  //     scope     : this.googleScope
-  //   };
+  /**
+   * Refresh a user's session (retrieve refreshed tokens)
+   */
+  public refreshCognitoSession() : Observable<any>
+  {
+    let tokens       = this.getTokens();
+    let cognitoUser  = this.getCognitoUser();
+    let refreshToken = new AWSCognito.CognitoRefreshToken({ RefreshToken : tokens.refreshToken });
 
-  //   gapi.load('auth2', () =>
-  //   {
-  //     this.googleAuth = gapi.auth2.init(params);
-  //   });
-  // }
-
-  // public loginGoogle() : Observable<any>
-  // {
-  //   return Observable.fromPromise(new Promise((resolve, reject) =>
-  //   {
-  //     let options : gapi.auth2.SigninOptions = {
-  //       scope : this.googleScope
-  //     };
-  //     this.googleAuth.signIn(options).then((onfulfilled : gapi.auth2.GoogleUser) => {
-
-  //       console.log('CognitoService : loginGoogle -> signIn succeeded');
-
-  //       let idToken : string                  = null;
-  //       let profile : gapi.auth2.BasicProfile = null;
-
-  //       idToken = onfulfilled.getId();
-  //       profile = onfulfilled.getBasicProfile();
-
-  //       this.setIdToken(idToken);
-  //       this.setProvider(AuthType.GOOGLE);
-  //       // this.buildGoogleCredentials();
-
-  //       return resolve(profile);
-
-  //     }, (onrejected : any) => {
-  //       console.error('CognitoService : loginGoogle -> signIn', onrejected);
-  //     }).catch((err) =>
-  //     {
-  //       console.error('CognitoService : loginGoogle -> signIn', err);
-  //       this.signOut();
-  //       return reject();
-  //     });
-  //   }));
-  // }
+    return Observable.fromPromise(new Promise((resolve, reject) => {
+      cognitoUser.refreshSession(refreshToken, (err : any, res : any) => {
+        if(res)
+        {
+          this.updateTokens(res);
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
+        }
+        console.error('CognitoService : refreshSession -> refreshSession', err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
+      });
+    }));
+  }
 
   public signOut() : void
   {
@@ -392,15 +437,21 @@ export class CognitoService
   // NOTE: MFA ---------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public sendMFACode(code : string, mfaType : string = null) : any
+  /**
+   * Login 2nd step for users with MFA enabled
+   *
+   * @param mfaCode
+   * @param mfaType - Optional parameter (SOFTWARE_TOKEN_MFA / SMS_MFA)
+   */
+  public sendMFACode(mfaCode : string, mfaType : string = null) : Observable<any>
   {
     // TODO: dynamic code
     // SOFTWARE_TOKEN_MFA
     // SMS_MFA
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser = this.getCognitoUser();
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      cognitoUser.sendMFACode(code,
+      cognitoUser.sendMFACode(mfaCode,
       {
         onSuccess : (session : AWSCognito.CognitoUserSession) =>
         {
@@ -416,38 +467,72 @@ export class CognitoService
     }));
   }
 
-  // -------------------------------------------------------------------------------------------
-  // NOTE: Password ----------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
-
-  public confirmPassword(username : string, newPassword : string, verificationCode : string) : Observable<any>
+  /**
+   * Return the user's MFA status
+   */
+  public getMFAOptions() : Observable<any>
   {
-    let cognitoUser : AWSCognito.CognitoUser = null;
-    cognitoUser = this.getCognitoUser(username);
+    let cognitoUser = this.getCognitoUser();
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      cognitoUser.confirmPassword(verificationCode, newPassword,
-      {
-        onSuccess()
-        {
-          return resolve();
-        },
-        onFailure : (err : Error) =>
-        {
-          console.error('CognitoService : confirmPassword -> confirmPassword', err);
-          return reject(err);
-        }
+      cognitoUser.getMFAOptions((err : Error, res : AWSCognito.MFAOption[]) => {
+        if(res)
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
+
+        console.error('CognitoService : getMFAOptions -> getMFAOptions', err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
       });
     }));
   }
 
-  public changePassword(newPassword : string, requiredAttributeData : any = {}) : Observable<any>
+  /**
+   * Return the user's MFA status (must have a phone_number set)
+   *
+   * @param enableMfa
+   */
+  public setMfa(enableMfa : boolean) : Observable<any>
   {
-    let cognitoUser : AWSCognito.CognitoUser = null;
-    cognitoUser = this.getCurrentUser();
-    if(this.cognitoUser)
-      cognitoUser = this.cognitoUser;
+    let cognitoUser = this.getCognitoUser();
+
+    return Observable.fromPromise(new Promise((resolve, reject) =>
+    {
+      if(enableMfa)
+      {
+        cognitoUser.enableMFA((err : Error, res : string) => {
+          if(res)
+            return resolve({ type : RespType.ON_SUCCESS, data : res });
+
+          console.error('CognitoService : setMfa -> enableMFA', err);
+          return reject({ type : RespType.ON_FAILURE, data : err });
+        });
+      }
+      else
+      {
+        cognitoUser.disableMFA((err : Error, res : string) => {
+          if(res)
+            return resolve({ type : RespType.ON_SUCCESS, data : res });
+
+          console.error('CognitoService : setMfa -> disableMFA', err);
+          return reject({ type : RespType.ON_FAILURE, data : err });
+        });
+      }
+    }));
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Password ----------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  /**
+   * Login user after they set a new password, if a new password is required
+   *
+   * @param newPassword
+   * @param requiredAttributeData - Optional parameter
+   */
+  public newPasswordRequired(newPassword : string, requiredAttributeData : any = {}) : Observable<any>
+  {
+    let cognitoUser = this.getCognitoUser();
 
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
@@ -460,21 +545,26 @@ export class CognitoService
         },
         onFailure : (err : any) =>
         {
-          console.error('CognitoService : changePassword -> completeNewPasswordChallenge', err);
+          console.error('CognitoService : newPasswordRequired -> completeNewPasswordChallenge', err);
           return reject(err);
         },
         mfaRequired : (challengeName : any, challengeParameters : any) =>
         {
-          return resolve({ type : RespType.MFA_REQUIRED, data : null });
+          return resolve({ type : RespType.MFA_REQUIRED, data : { challengeName : challengeName, challengeParameters : challengeParameters } });
         }
       });
     }));
   }
 
+  /**
+   * Initiate forgot password flow
+   *
+   * @param username
+   */
   public forgotPassword(username : string) : Observable<any>
   {
-    let cognitoUser : AWSCognito.CognitoUser = null;
-    cognitoUser = this.getCognitoUser(username);
+    let cognitoUser = this.getCognitoUser(username);
+
     return Observable.fromPromise(new Promise((resolve, reject) =>
     {
       cognitoUser.forgotPassword({
@@ -498,15 +588,83 @@ export class CognitoService
     }));
   }
 
-  public resendConfirmationCode() : any
+  // TODO: Check if it's for what I think
+
+  /**
+   * Resend the forgotPassword verification code
+   */
+  public getAttributeVerificationCode() : Observable<any>
   {
-    let cognitoUser = this.getCurrentUser();
-    cognitoUser.resendConfirmationCode((err : Error, res : string) =>
+    let cognitoUser = this.getCognitoUser();
+
+    return Observable.fromPromise(new Promise((resolve, reject) =>
     {
-      if(res)
-        return res;
-      console.error('CognitoService : resendConfirmationCode -> resendConfirmationCode', err);
-    });
+      let name : string = null;
+      cognitoUser.getAttributeVerificationCode(name, {
+        onSuccess : () =>
+        {
+          return resolve({ type : RespType.ON_SUCCESS, data : null });
+        },
+        onFailure : (err : Error) =>
+        {
+          console.error('CognitoService : getAttributeVerificationCode -> getAttributeVerificationCode', err);
+          return reject({ type : RespType.ON_FAILURE, data : err });
+        },
+        inputVerificationCode : (data: string) =>
+        {
+          //
+        }
+      });
+    }));
+  }
+
+  /**
+   * Finish forgot password flow
+   *
+   * @param newPassword
+   * @param verificationCode
+   */
+  public confirmPassword(newPassword : string, verificationCode : string) : Observable<any>
+  {
+    let cognitoUser = this.getCognitoUser();
+
+    return Observable.fromPromise(new Promise((resolve, reject) =>
+    {
+      cognitoUser.confirmPassword(verificationCode, newPassword,
+      {
+        onSuccess()
+        {
+          return resolve();
+        },
+        onFailure : (err : Error) =>
+        {
+          console.error('CognitoService : confirmPassword -> confirmPassword', err);
+          return reject(err);
+        }
+      });
+    }));
+  }
+
+  /**
+   * Update a user's password
+   *
+   * @param oldPassword
+   * @param newPassword
+   */
+  public changePassword(oldPassword : string, newPassword : string) : Observable<any>
+  {
+    let cognitoUser = this.getCognitoUser();
+
+    return Observable.fromPromise(new Promise((resolve, reject) =>
+    {
+      cognitoUser.changePassword(oldPassword, newPassword, (err : Error, res : string) => {
+        if(res)
+          return resolve({ type : RespType.ON_SUCCESS, data : res });
+
+        console.error('CognitoService : changePassword -> changePassword', err);
+        return reject({ type : RespType.ON_FAILURE, data : err });
+      });
+    }));
   }
 
   // -------------------------------------------------------------------------------------------
@@ -618,27 +776,59 @@ export class CognitoService
   }
 
   // -------------------------------------------------------------------------------------------
-  // NOTE: Session -----------------------------------------------------------------------------
+  // NOTE: Authentication ----------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public refreshCognitoSession() : Observable<any>
-  {
-    let tokens       = this.getTokens();
-    let cognitoUser  = this.getCognitoUser();
-    let refreshToken = new AWSCognito.CognitoRefreshToken({ RefreshToken : tokens.refreshToken });
+  // public initGoogle() : void
+  // {
+  //   let params : gapi.auth2.ClientConfig = {
+  //     client_id : this.googleId,
+  //     scope     : this.googleScope
+  //   };
 
-    return Observable.fromPromise(new Promise((resolve, reject) => {
-      cognitoUser.refreshSession(refreshToken, (err, res) => {
-        if(res)
-        {
-          this.updateTokens(res);
-          return resolve({ type : RespType.ON_SUCCESS, data : res });
-        }
-        console.error('CognitoService : refreshSession -> refreshSession', err);
-        return reject({ type : RespType.ON_FAILURE, data : err });
-      });
-    }));
-  }
+  //   gapi.load('auth2', () =>
+  //   {
+  //     this.googleAuth = gapi.auth2.init(params);
+  //   });
+  // }
+
+  // public loginGoogle() : Observable<any>
+  // {
+  //   return Observable.fromPromise(new Promise((resolve, reject) =>
+  //   {
+  //     let options : gapi.auth2.SigninOptions = {
+  //       scope : this.googleScope
+  //     };
+  //     this.googleAuth.signIn(options).then((onfulfilled : gapi.auth2.GoogleUser) => {
+
+  //       console.log('CognitoService : loginGoogle -> signIn succeeded');
+
+  //       let idToken : string                  = null;
+  //       let profile : gapi.auth2.BasicProfile = null;
+
+  //       idToken = onfulfilled.getId();
+  //       profile = onfulfilled.getBasicProfile();
+
+  //       this.setIdToken(idToken);
+  //       this.setProvider(AuthType.GOOGLE);
+  //       // this.buildGoogleCredentials();
+
+  //       return resolve(profile);
+
+  //     }, (onrejected : any) => {
+  //       console.error('CognitoService : loginGoogle -> signIn', onrejected);
+  //     }).catch((err) =>
+  //     {
+  //       console.error('CognitoService : loginGoogle -> signIn', err);
+  //       this.signOut();
+  //       return reject();
+  //     });
+  //   }));
+  // }
+
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Session -----------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
 
   // public askRefresh() : Observable<any>
   // {
@@ -823,7 +1013,7 @@ export class CognitoService
 
   private signOutCognito() : void
   {
-    let cognitoUser = this.getCurrentUser();
+    let cognitoUser = this.getCognitoUser();
     if(cognitoUser)
       cognitoUser.signOut();
   }
