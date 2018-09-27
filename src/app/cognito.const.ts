@@ -1,5 +1,5 @@
 export const CognitoConst = {
-  // googleId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
+  googleId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
   poolData : {
     UserPoolId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPool
     ClientId   : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPoolClient

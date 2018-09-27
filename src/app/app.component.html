@@ -4,6 +4,7 @@
       <!-- NOTE: Login -->
       <cal-login-form #loginForm 
         (login)="login($event)" 
+        (loginSocial)="loginSocial($event)" 
         (forgotPwd)="forgotPassword($event)" 
         (sendFirstPwd)="firstPassword($event)" 
         (sendResetPwd)="lostPassword($event)">

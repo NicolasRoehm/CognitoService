@@ -17,6 +17,7 @@ npm install @caliatys/cognito-service --save
 Copy/paste [src/app/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/cognito.const.ts) and replace the parameters with your resource identifiers.
 ```typescript
 export const CognitoConst = {
+  googleId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
   poolData : {
     UserPoolId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPool
     ClientId   : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPoolClient
@@ -80,7 +81,7 @@ this.cognitoService.resendConfirmationCode();
 #### Login
 Login an existing user :
 ```typescript
-this.cognitoService.authenticateUser('username', 'password').subscribe(res => {
+this.cognitoService.authenticateUser(AuthType.COGNITO, 'username', 'password').subscribe(res => {
 
   // Success login
   if(res.type === RespType.ON_SUCCESS)
@@ -188,7 +189,7 @@ this.cognitoService.forgotPassword('username').subscribe(res => {
 #### Confirm password
 Complete the `INPUT_VERIFICATION_CODE` response sent by the `forgotPassword` method to finish the forgot password flow.
 ```typescript
-this.cognitoService.confirmPassword('username', 'newPassword', 'verificationCode').subscribe(res => {
+this.cognitoService.confirmPassword('newPassword', 'verificationCode').subscribe(res => {
   // Success
 }, err => {
   // Error
@@ -294,15 +295,15 @@ ng serve
 
 **Important Note**: This project uses the following dependencies :
 ```json
-"@angular/common": "^6.0.0-rc.0 || ^6.0.0",
-"@angular/core": "^6.0.0-rc.0 || ^6.0.0",
-"@angular/http": "^6.0.3",
-"rxjs": "^6.0.0",
-"rxjs-compat": "^6.0.0",
-"amazon-cognito-identity-js": "2.0.6",
-"aws-sdk": "2.247.1",
-"@types/gapi": "0.0.35",
-"@types/gapi.auth2": "0.0.47"
+"@angular/common"            : "^6.0.0-rc.0 || ^6.0.0",
+"@angular/core"              : "^6.0.0-rc.0 || ^6.0.0",
+"@angular/http"              : "^6.0.3",
+"rxjs"                       : "^6.0.0",
+"rxjs-compat"                : "^6.0.0",
+"amazon-cognito-identity-js" : "2.0.6",
+"aws-sdk"                    : "2.247.1",
+"@types/gapi"                : "0.0.35",
+"@types/gapi.auth2"          : "0.0.47"
 ```
 
 ## Roadmap
@@ -312,7 +313,6 @@ ng serve
 
 ### Planning
 - Facebook
-- Google
 
 ### Contributions
 

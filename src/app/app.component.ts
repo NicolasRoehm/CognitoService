@@ -9,7 +9,8 @@ import { HttpClient }         from '@angular/common/http';
 import { HttpErrorResponse }  from '@angular/common/http';
 
 // External modules
-import { Observable }         from 'rxjs/Observable';
+import { Observable }         from 'rxjs';
+import { from }               from 'rxjs';
 import { TranslateService }   from '@ngx-translate/core';
 
 // Components
@@ -71,6 +72,29 @@ export class AppComponent
     this.isAuthenticated = false;
   }
 
+  public loginSocial($event : any) : void
+  {
+    if(!$event)
+      return;
+
+    let social : string = null;
+    social = $event.social;
+
+    if(social !== AuthType.GOOGLE)
+      return;
+
+    // Show loader
+    this.cognitoService.authenticateUser(AuthType.GOOGLE).subscribe(res =>
+    {
+      console.log(res);
+      this.onSuccessLogin();
+    },
+    err =>
+    {
+      console.log(err);
+    });
+  }
+
   public login($event : any) : void
   {
     if(!$event)
@@ -82,7 +106,7 @@ export class AppComponent
     password = $event.password;
 
     // Show loader
-    this.cognitoService.authenticateUser(username, password).subscribe(res =>
+    this.cognitoService.authenticateUser(AuthType.COGNITO, username, password).subscribe(res =>
     {
       // Success login
       if(res.type === RespType.ON_SUCCESS)
@@ -245,8 +269,9 @@ export class AppComponent
 
   public refresh() : void
   {
-    this.cognitoService.refreshCognitoSession().subscribe(res => {
+    this.cognitoService.refreshSession().subscribe(res => {
       console.log(res);
+      console.log(new Date(res.data.expires_at));
     }, err => {
       console.log(err);
     });
@@ -270,7 +295,7 @@ export class AppComponent
     options.headers = headers;
     options.params  = params;
 
-    return Observable.fromPromise(new Promise((resolve, reject) =>
+    return from(new Promise((resolve, reject) =>
     {
       this.http.get('YOUR_API_URL', options).subscribe((res : ArrayBuffer) => {
         console.log(res);
@@ -292,6 +317,7 @@ export class AppComponent
     console.log(this.cognitoService.getUsername());
     console.log(this.cognitoService.getProvider());
     console.log(this.cognitoService.getIdToken());
+    console.log(new Date(this.cognitoService.getExpiresAt()));
     this.isAuthenticated = true;
   }
 
