@@ -1,9 +1,8 @@
-// https://github.com/aws-samples/aws-cognito-apigw-angular-auth/blob/master/src/app/aws.service.ts
-
 // Angular modules
 import { Injectable }        from '@angular/core';
 import { Inject }            from '@angular/core';
 import { Optional }          from '@angular/core';
+import { EventEmitter }      from '@angular/core';
 import { HttpClient }        from '@angular/common/http';
 
 // External modules
@@ -28,30 +27,29 @@ export enum GoogleAction
 })
 export class CognitoService
 {
-  // public googleCreds   : any;
-  // public googleProfile : any;
-  // public googleData    : any;
+  public  emitLogout       : EventEmitter<null>;
 
-  // public MFA : boolean = false;
-  public googleId    : string = null;
-  public googleScope : string = null;
+  // private MFA              : boolean = false;
 
-  public poolData : AWSCognito.ICognitoUserPoolData = {
+  private storagePrefix    : string;
+  private sessionTime      : number;
+
+  private googleId         : string;
+  private googleScope      : string;
+
+  private poolData : AWSCognito.ICognitoUserPoolData = {
     UserPoolId : null, // CognitoUserPool
     ClientId   : null  // CognitoUserPoolClient
   };
-  public identityPool : string = null; // CognitoIdentityPool
-  public region       : string = null; // Region Matching CognitoUserPool region
 
-  public adminAccessKeyId : string = null;
-  public adminSecretKeyId : string = null;
+  // private identityPool     : string; // CognitoIdentityPool
 
-  public storagePrefix : string = 'CognitoService';
+  private region           : string; // Region Matching CognitoUserPool region
+  private adminAccessKeyId : string;
+  private adminSecretKeyId : string;
 
-  // private subscribe   : Subscription;
-  // private timer       : Observable<number>;
-  private googleAuth  : gapi.auth2.GoogleAuth;
-  private cognitoUser : AWSCognito.CognitoUser;
+  private googleAuth       : gapi.auth2.GoogleAuth;
+  private cognitoUser      : AWSCognito.CognitoUser;
 
   constructor
   (
@@ -59,35 +57,93 @@ export class CognitoService
     private http ?: HttpClient
   )
   {
+    this.emitLogout          = new EventEmitter();
+
+    this.storagePrefix       = cognitoConst.storagePrefix + '_CognitoService_';
+    this.sessionTime         = cognitoConst.sessionTime  || 3500000;
+
     this.googleId            = cognitoConst.googleId;
     this.googleScope         = cognitoConst.googleScope;
 
     this.poolData.UserPoolId = cognitoConst.poolData.UserPoolId;
     this.poolData.ClientId   = cognitoConst.poolData.ClientId;
-    this.identityPool        = cognitoConst.identityPool;
-    this.region              = cognitoConst.region;
 
+    // this.identityPool        = cognitoConst.identityPool;
+
+    this.region              = cognitoConst.region;
     this.adminAccessKeyId    = cognitoConst.adminAccessKeyId;
     this.adminSecretKeyId    = cognitoConst.adminSecretKeyId;
   }
 
-  // ----------------------------------------------------------------------------------------------
-  // NOTE: Helpers --------------------------------------------------------------------------------
-  // ----------------------------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Helpers -----------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
 
-  // NOTE: Misc
+  // NOTE: Misc --------------------------------------------------------------------------------
 
   public isAuthenticated() : boolean
   {
-    let expiresAt = this.getExpiresAt();
-    if(!expiresAt)
-      return false;
-    if(expiresAt < Math.round(Date.now()/1000))
-      return false;
-    return true;
+    if(this.getRemaining())
+      return true;
+    return false;
   }
 
-  // NOTE: Username
+  // NOTE: Session -----------------------------------------------------------------------------
+
+  public updateSessionTime() : void
+  {
+    let expiresAt = this.getExpiresAt();
+    let nextTime  = Date.now() + this.sessionTime;
+
+    if(!expiresAt)
+      return;
+
+    if(nextTime < (expiresAt*1000))
+    {
+      this.setExpiresAt(nextTime);
+      return;
+    }
+
+    // Refresh token
+    this.refreshCognitoSession().subscribe(res =>
+    {
+      this.setExpiresAt(nextTime);
+    },
+    err =>
+    {
+      this.emitLogout.emit(); // Emmit logout
+    });
+  }
+
+  public getRemaining() : number
+  {
+    let remaining : number = 0;
+    let now       : number = 0;
+    let max       : number = 0;
+    now = Date.now();
+    max = this.getExpiresAt();
+
+    if(!max)
+      return null;
+    remaining = (max*1000) - now;
+    if(remaining <= 0)
+      return null;
+    return remaining;
+  }
+
+  public getExpiresAt() : number
+  {
+    let storageKey   : string = null;
+    let expiresAtStr : string = null;
+    let expiresAtNum : number = null;
+    storageKey   = this.storagePrefix + 'ExpiresAt';
+    expiresAtStr = localStorage.getItem(storageKey);
+    if(expiresAtStr)
+      expiresAtNum = Number(expiresAtStr);
+    return expiresAtNum;
+  }
+
+  // NOTE: Username ----------------------------------------------------------------------------
 
   public getUsername() : string
   {
@@ -98,14 +154,7 @@ export class CognitoService
     return provider;
   }
 
-  public setUsername(username : string) : void
-  {
-    let storageKey : string = null;
-    storageKey = this.storagePrefix + 'Username';
-    localStorage.setItem(storageKey, username);
-  }
-
-  // NOTE: Provider
+  // NOTE: Provider ----------------------------------------------------------------------------
 
   public getProvider() : string
   {
@@ -116,21 +165,7 @@ export class CognitoService
     return provider;
   }
 
-  public setProvider(provider : string) : void
-  {
-    let storageKey : string = null;
-    storageKey = this.storagePrefix + 'Provider';
-    localStorage.setItem(storageKey, provider);
-  }
-
-  // NOTE: Token
-
-  public setIdToken(token : string) : void
-  {
-    let storageKey : string = null;
-    storageKey = this.storagePrefix + 'IdToken';
-    localStorage.setItem(storageKey, token);
-  }
+  // NOTE: Token -------------------------------------------------------------------------------
 
   public getIdToken() : string
   {
@@ -139,40 +174,6 @@ export class CognitoService
     storageKey = this.storagePrefix + 'IdToken';
     idToken    = localStorage.getItem(storageKey);
     return idToken;
-  }
-
-  public setTokens(session : AWSCognito.CognitoUserSession) : void
-  {
-    let storageKey : string = null;
-    let tokensStr  : string = null;
-    let tokensObj  : any    = null;
-
-    storageKey = this.storagePrefix + 'SessionTokens';
-    tokensObj  = {
-      accessToken          : session.getAccessToken().getJwtToken(),
-      accessTokenExpiresAt : session.getAccessToken().getExpiration(),
-      idToken              : session.getIdToken().getJwtToken(),
-      idTokenExpiresAt     : session.getIdToken().getExpiration(),
-      refreshToken         : session.getRefreshToken().getToken()
-    };
-    tokensStr = JSON.stringify(tokensObj);
-    localStorage.setItem(storageKey, tokensStr);
-  }
-
-  public setExpiresAt(expiresAt : number) : void
-  {
-    let storageKey : string = null;
-    storageKey = this.storagePrefix + 'ExpiresAt';
-    localStorage.setItem(storageKey, expiresAt.toString());
-  }
-
-  public getExpiresAt() : number
-  {
-    let storageKey : string = null;
-    let expiresAt  : string = null;
-    storageKey = this.storagePrefix + 'ExpiresAt';
-    expiresAt  = localStorage.getItem(storageKey);
-    return Number(expiresAt);
   }
 
   public getTokens() : any
@@ -186,46 +187,9 @@ export class CognitoService
     return tokensObj;
   }
 
-  public updateTokens(session : AWSCognito.CognitoUserSession) : void
-  {
-    let tokens : any = null;
-    this.setTokens(session);
-    tokens = this.getTokens();
-    this.setIdToken(tokens.idToken);
-    this.setExpiresAt(tokens.idTokenExpiresAt);
-  }
-
-  // NOTE: Storage
-
-  public clearStorage() : void
-  {
-    localStorage.removeItem(this.storagePrefix + 'Username');
-    localStorage.removeItem(this.storagePrefix + 'Provider');
-    localStorage.removeItem(this.storagePrefix + 'IdToken');
-    localStorage.removeItem(this.storagePrefix + 'ExpiresAt');
-    localStorage.removeItem(this.storagePrefix + 'SessionTokens');
-  }
-
   // -------------------------------------------------------------------------------------------
   // NOTE: User --------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
-
-  public setCognitoUser(username : string) : AWSCognito.CognitoUser
-  {
-    let cognitoUser : AWSCognito.CognitoUser = null;
-    let cognitoUserPool = new AWSCognito.CognitoUserPool(this.poolData);
-
-    let userData : AWSCognito.ICognitoUserData = {
-      Username   : username,
-      Pool       : cognitoUserPool
-    };
-    cognitoUser = new AWSCognito.CognitoUser(userData);
-
-    this.cognitoUser = cognitoUser; // Store the user in the service
-    this.setUsername(username); // Store the username in the local storage
-
-    return cognitoUser;
-  }
 
   public getCognitoUser(username : string = null) : AWSCognito.CognitoUser
   {
@@ -521,8 +485,6 @@ export class CognitoService
     }));
   }
 
-  // TODO: Check if it's for what I think
-
   /**
    * Resend the forgotPassword verification code
    */
@@ -543,9 +505,9 @@ export class CognitoService
           console.error('CognitoService : getAttributeVerificationCode -> getAttributeVerificationCode', err);
           return reject({ type : RespType.ON_FAILURE, data : err });
         },
-        inputVerificationCode : (data: string) =>
+        inputVerificationCode : (data : string) =>
         {
-          //
+          return resolve({ type : RespType.INPUT_VERIFICATION_CODE, data : data });
         }
       });
     }));
@@ -997,15 +959,6 @@ export class CognitoService
     }));
   }
 
-  // private buildGoogleCredentials() : void
-  // {
-  //   AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-  //     IdentityPoolId : this.identityPool,
-  //     Logins         : { 'accounts.google.com' : this.getIdToken() }
-  //   });
-  //   // 'graph.facebook.com'
-  // }
-
   private signOutGoogle() : void
   {
     this.googleAuth.signOut().then(() => {
@@ -1016,5 +969,102 @@ export class CognitoService
   // -------------------------------------------------------------------------------------------
   // TODO: Facebook ----------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
+
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Private helpers ---------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  // NOTE: User --------------------------------------------------------------------------------
+
+  private setCognitoUser(username : string) : AWSCognito.CognitoUser
+  {
+    let cognitoUser : AWSCognito.CognitoUser = null;
+    let cognitoUserPool = new AWSCognito.CognitoUserPool(this.poolData);
+
+    let userData : AWSCognito.ICognitoUserData = {
+      Username   : username,
+      Pool       : cognitoUserPool
+    };
+    cognitoUser = new AWSCognito.CognitoUser(userData);
+
+    this.cognitoUser = cognitoUser; // Store the user in the service
+    this.setUsername(username); // Store the username in the local storage
+
+    return cognitoUser;
+  }
+
+  // NOTE: Session -----------------------------------------------------------------------------
+
+  private setExpiresAt(expiresAt : number) : void
+  {
+    let storageKey : string = null;
+    storageKey = this.storagePrefix + 'ExpiresAt';
+    localStorage.setItem(storageKey, expiresAt.toString());
+  }
+
+  // NOTE: Username ----------------------------------------------------------------------------
+
+  private setUsername(username : string) : void
+  {
+    let storageKey : string = null;
+    storageKey = this.storagePrefix + 'Username';
+    localStorage.setItem(storageKey, username);
+  }
+
+  // NOTE: Provider ----------------------------------------------------------------------------
+
+  private setProvider(provider : string) : void
+  {
+    let storageKey : string = null;
+    storageKey = this.storagePrefix + 'Provider';
+    localStorage.setItem(storageKey, provider);
+  }
+
+  // NOTE: Token -------------------------------------------------------------------------------
+
+  private setIdToken(token : string) : void
+  {
+    let storageKey : string = null;
+    storageKey = this.storagePrefix + 'IdToken';
+    localStorage.setItem(storageKey, token);
+  }
+
+  private setTokens(session : AWSCognito.CognitoUserSession) : void
+  {
+    let storageKey : string = null;
+    let tokensStr  : string = null;
+    let tokensObj  : any    = null;
+
+    storageKey = this.storagePrefix + 'SessionTokens';
+    tokensObj  = {
+      accessToken          : session.getAccessToken().getJwtToken(),
+      accessTokenExpiresAt : session.getAccessToken().getExpiration(),
+      idToken              : session.getIdToken().getJwtToken(),
+      idTokenExpiresAt     : session.getIdToken().getExpiration(),
+      refreshToken         : session.getRefreshToken().getToken()
+    };
+    tokensStr = JSON.stringify(tokensObj);
+    localStorage.setItem(storageKey, tokensStr);
+  }
+
+  private updateTokens(session : AWSCognito.CognitoUserSession) : void
+  {
+    let tokens : any = null;
+    this.setTokens(session);
+    tokens = this.getTokens();
+    this.setIdToken(tokens.idToken);
+    this.setExpiresAt(tokens.idTokenExpiresAt);
+  }
+
+  // NOTE: Storage -----------------------------------------------------------------------------
+
+  private clearStorage() : void
+  {
+    localStorage.removeItem(this.storagePrefix + 'Username');
+    localStorage.removeItem(this.storagePrefix + 'Provider');
+    localStorage.removeItem(this.storagePrefix + 'IdToken');
+    localStorage.removeItem(this.storagePrefix + 'ExpiresAt');
+    localStorage.removeItem(this.storagePrefix + 'SessionTokens');
+  }
 
 }

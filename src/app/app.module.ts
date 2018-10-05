@@ -1,16 +1,18 @@
 // Angular modules
-import { NgModule }                from '@angular/core';
-import { HttpModule }              from '@angular/http';
-import { HttpClient }              from '@angular/common/http';
-import { HttpClientModule }        from '@angular/common/http';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { BrowserModule }           from '@angular/platform-browser';
+import { NgModule }                 from '@angular/core';
+import { HttpModule }               from '@angular/http';
+import { HttpClient }               from '@angular/common/http';
+import { HttpClientModule }         from '@angular/common/http';
+import { BrowserAnimationsModule }  from '@angular/platform-browser/animations';
+import { BrowserModule }            from '@angular/platform-browser';
 
 // External modules
 import { LoginFormModule }          from '@caliatys/login-form';
 import { TranslateModule }          from '@ngx-translate/core';
 import { TranslateLoader }          from '@ngx-translate/core';
 import { TranslateHttpLoader }      from '@ngx-translate/http-loader';
+import { NgIdleKeepaliveModule }    from '@ng-idle/keepalive';
+import { MomentModule }             from 'angular2-moment';
 
 // Material modules
 // import { MatProgressSpinnerModule } from '@angular/material';
@@ -84,19 +86,27 @@ export class MaterialModule {}
 
 @NgModule({
   imports: [
+    // Angular modules
     HttpModule,
     HttpClientModule,
     BrowserAnimationsModule,
     BrowserModule,
-    LoginFormModule,
+
+    // Material modules
     MaterialModule,
 
-    // External
+    // TODO: Modules to import into your project
+    LoginFormModule,
+    NgIdleKeepaliveModule.forRoot(),
+    MomentModule,
+
+    // External modules
     TranslateModule.forRoot({
-      loader: {
-        provide: TranslateLoader,
-        useFactory: (createTranslateLoader),
-        deps: [HttpClient]
+      loader :
+      {
+        provide    : TranslateLoader,
+        useFactory : (createTranslateLoader),
+        deps       : [HttpClient]
       }
     }),
   ],

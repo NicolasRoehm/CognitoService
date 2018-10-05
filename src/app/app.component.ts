@@ -1,7 +1,8 @@
 // Angular modules
 import { Component }          from '@angular/core';
+import { OnInit }             from '@angular/core';
+import { OnDestroy }          from '@angular/core';
 import { ViewChild }          from '@angular/core';
-import { ChangeDetectorRef }  from '@angular/core';
 import { MatSnackBar }        from '@angular/material';
 import { HttpParams }         from '@angular/common/http';
 import { HttpHeaders }        from '@angular/common/http';
@@ -9,9 +10,13 @@ import { HttpClient }         from '@angular/common/http';
 import { HttpErrorResponse }  from '@angular/common/http';
 
 // External modules
-import { Observable }         from 'rxjs';
-import { from }               from 'rxjs';
-import { TranslateService }   from '@ngx-translate/core';
+import { Subscription }             from 'rxjs';
+import { Observable }               from 'rxjs';
+import { from }                     from 'rxjs';
+import { TranslateService }         from '@ngx-translate/core';
+import { Idle }                     from '@ng-idle/core';
+import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
+import { Keepalive }                from '@ng-idle/keepalive';
 
 // Components
 import { LoginFormComponent } from '@caliatys/login-form';
@@ -32,45 +37,64 @@ import { CognitoConst }       from './cognito.const';
   templateUrl : './app.component.html',
   styleUrls   : ['./app.component.scss']
 })
-export class AppComponent
+export class AppComponent implements OnInit, OnDestroy
 {
-
+  // NOTE: @caliatys/login-form
   @ViewChild('loginForm') loginForm : LoginFormComponent;
 
-  public apiURL      : string = '';
+  // NOTE: @caliatys/cognito-service
+  public  cognitoService  : CognitoService = new CognitoService(CognitoConst);
+  public  isAuthenticated : boolean = false;
 
-  public refreshList : any = [];
-  public requestList : any = [];
+  // NOTE: Session with : @ng-idle/core - @ng-idle/keepalive - @caliatys/cognito-service
+  public  idleState : string  = 'Not started.';
+  public  timedOut  : boolean = null;
+  public  lastPing ?: Date    = null;
+  private logoutSub : Subscription;
 
-  public cognitoService  : CognitoService = new CognitoService(CognitoConst);
-  public isAuthenticated : boolean = false;
+  // NOTE: Authenticated request
+  private apiURL    : string = 'YOUR_API_URL';
 
   constructor
   (
     public  snackBar  : MatSnackBar,
+    private idle      : Idle,
     private http      : HttpClient,
     private translate : TranslateService,
-    private cdRef     : ChangeDetectorRef,
+    private keepalive : Keepalive
   )
   {
-    // NOTE: This language will be used as a fallback when a translation isn't found in the current language
+    // This language will be used as a fallback when a translation isn't found in the current language
     translate.setDefaultLang('en');
-    // NOTE: The lang to use, if the lang isn't available, it will use the current loader to get them
+    // The lang to use, if the lang isn't available, it will use the current loader to get them
     translate.use('en');
-
-    this.isAuthenticated = this.cognitoService.isAuthenticated();
-    console.log(this.isAuthenticated);
   }
 
-  // -------------------------------------------------------------------------------
-  // NOTE: Actions -----------------------------------------------------------------
-  // -------------------------------------------------------------------------------
+  public ngOnInit() : void
+  {
+    this.logoutSub       = this.logoutSubscription();
+    this.isAuthenticated = this.cognitoService.isAuthenticated();
+    this.setIdle();
+  }
+
+  public ngOnDestroy() : void
+  {
+    this.logoutSub.unsubscribe();
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Actions -----------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  // NOTE: Logout ------------------------------------------------------------------------------
 
   public logout() : void
   {
     this.cognitoService.signOut();
     this.isAuthenticated = false;
   }
+
+  // NOTE: Google login ------------------------------------------------------------------------
 
   public loginSocial($event : any) : void
   {
@@ -95,11 +119,10 @@ export class AppComponent
     });
   }
 
+  // NOTE: Cognito login -----------------------------------------------------------------------
+
   public login($event : any) : void
   {
-    if(!$event)
-      return;
-
     let username : string = null;
     let password : string = null;
     username = $event.username;
@@ -144,11 +167,10 @@ export class AppComponent
     });
   }
 
+  // -------------------------------------------------------------------------------------------
+
   public forgotPassword($event : any) : void
   {
-    if(!$event)
-      return;
-
     let username : string = null;
     username = $event.username;
 
@@ -172,10 +194,10 @@ export class AppComponent
 
       switch(errorCode)
       { // NOTE: This example use AWS errors
-        case AuthError.FORGOT_PASS_VERIF_EMAIL :
-          errorMsg = this.translate.instant('ERROR_INCORRECT_EMAIL');
+        case AuthError.FORGOT_PWD_VERIF_USER :
+          errorMsg = this.translate.instant('ERROR_INCORRECT_USER');
           break;
-        case AuthError.FORGOT_PASS_VERIF_INIT :
+        case AuthError.FORGOT_PWD_VERIF_INIT :
           errorMsg = this.translate.instant('ERROR_FORGOT_PASS_VERIF_INIT');
           break;
         case AuthError.VERIF_LIMIT :
@@ -194,11 +216,10 @@ export class AppComponent
     });
   }
 
-  public firstPassword($event : any) : void
-  { // NOTE: First connection
-    if(!$event)
-      return;
+  // NOTE: First connection --------------------------------------------------------------------
 
+  public firstPassword($event : any) : void
+  {
     let username    : string = null;
     let newPassword : string = null;
     username    = $event.username;
@@ -222,15 +243,12 @@ export class AppComponent
     });
   }
 
-  public lostPassword($event : any) : void
-  { // NOTE: Lost password
-    if(!$event)
-      return;
+  // NOTE: Lost password -----------------------------------------------------------------------
 
-    let username    : string = null;
+  public lostPassword($event : any) : void
+  {
     let newPassword : string = null;
     let verifCode   : string = null;
-    username    = $event.username;
     newPassword = $event.password;
     verifCode   = $event.verificationCode;
 
@@ -263,9 +281,10 @@ export class AppComponent
     });
   }
 
-  // -------------------------------------------------------------------------------------------
+  // Do not add these two following functions inside your project !
+  // You can use them to test the cognito service if you are logged in.
+
   // NOTE: Refresh session ---------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
 
   public refresh() : void
   {
@@ -277,9 +296,7 @@ export class AppComponent
     });
   }
 
-  // -------------------------------------------------------------------------------------------
   // NOTE: Api gateway request -----------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
 
   public request() : Observable<any>
   {
@@ -289,15 +306,15 @@ export class AppComponent
     let options : any         = {};
     params  = new HttpParams();
     headers = new HttpHeaders({
-      'Content-Type'        : 'application/json',
-      'Authorization'       : token
+      'Content-Type'  : 'application/json',
+      'Authorization' : token
     });
     options.headers = headers;
     options.params  = params;
 
     return from(new Promise((resolve, reject) =>
     {
-      this.http.get('YOUR_API_URL', options).subscribe((res : ArrayBuffer) => {
+      this.http.get(this.apiURL, options).subscribe((res : ArrayBuffer) => {
         console.log(res);
         return resolve(res);
       }, (err : HttpErrorResponse) => {
@@ -305,6 +322,64 @@ export class AppComponent
         return reject(err);
       });
     }));
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Refresh plugin ----------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  private setIdle() : void
+  {
+    this.timedOut = false;
+
+    this.idle.setIdle(5); // Sets an idle timeout of 5 seconds
+    this.idle.setTimeout(CognitoConst.sessionTime / 1000); // After X seconds (+ 5 idle seconds) of inactivity, the user will be considered timed out
+
+    this.idle.setInterrupts(DEFAULT_INTERRUPTSOURCES); // Sets the default interrupts, in this case, things like clicks, scrolls, touches to the document
+
+    this.idle.onIdleEnd.subscribe(() => this.idleState = 'No longer idle.');
+
+    this.idle.onIdleStart.subscribe(() => this.idleState = 'You\'ve gone idle!');
+    this.idle.onTimeoutWarning.subscribe((countdown) => this.idleState = 'You will time out in ' + countdown + ' seconds!');
+
+    this.keepalive.interval(5); // Sets the ping interval to 5 seconds
+
+    this.keepalive.onPing.subscribe(() =>
+    {
+      this.cognitoService.updateSessionTime();
+      this.lastPing = new Date();
+    });
+
+    this.idle.onTimeout.subscribe(() =>
+    {
+      this.idleState = 'Timed out!';
+      this.timedOut  = true;
+      this.cognitoService.emitLogout.emit();
+    });
+
+    this.resetIdle();
+  }
+
+  private resetIdle() : void
+  {
+    this.idle.watch();
+    this.idleState = 'Started.';
+    this.timedOut  = false;
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // ---- NOTE: Subscription -------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  private logoutSubscription() : Subscription
+  {
+    let logoutSub : Subscription = null;
+    logoutSub = this.cognitoService.emitLogout.subscribe(() =>
+    {
+      this.isAuthenticated = false;
+      this.cognitoService.signOut();
+    });
+    return logoutSub;
   }
 
   // -------------------------------------------------------------------------------------------
