@@ -1,5 +1,5 @@
 # Manage your users with AWS Cognito
-This Angular 6 Library is a wrapper around the client libraries `aws-sdk` and `amazon-cognito-identity-js` to easily manage your Cognito User Pool.
+This Angular 6 Library is a wrapper around the client libraries `aws-sdk` and `amazon-cognito-identity-js` to easily manage your Cognito User Pool. It also uses the `@ng-idle` and `angular2-moment` plugin to manage the connected user's session.
 
 <a href="https://nodei.co/npm/@caliatys/cognito-service/" target="_blank">
   <img src="https://nodei.co/npm/@caliatys/cognito-service.svg?downloads=true">
@@ -17,11 +17,14 @@ npm install @caliatys/cognito-service --save
 Copy/paste [src/app/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/cognito.const.ts) and replace the parameters with your resource identifiers.
 ```typescript
 export const CognitoConst = {
-  googleId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
-  poolData : {
-    UserPoolId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPool
-    ClientId   : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPoolClient
-    Paranoia   : 7 // an integer between 1 - 10
+  storagePrefix    : 'AngularApp',
+  sessionTime      : 3500000, // In milliseconds (58 min = 3500000 ms)
+  googleId         : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
+  googleScope      : '',
+  poolData         : {
+    UserPoolId     : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPool
+    ClientId       : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPoolClient
+    Paranoia       : 7 // An integer between 1 - 10
   },
   // Admin (optional)
   region           : 'eu-west-1', // Region matching CognitoUserPool region
@@ -30,19 +33,130 @@ export const CognitoConst = {
 };
 ```
 
+Add the API inside the `<head>` of `index.html` to enable authentication with Google :
+```html
+<script src="https://apis.google.com/js/platform.js"></script>
+```
+
+Add `NgIdleKeepaliveModule` and `MomentModule` into the imports of `app.module.ts` :
+```typescript
+//...
+import { NgIdleKeepaliveModule } from '@ng-idle/keepalive'; // this includes the core NgIdleModule but includes keepalive providers for easy wireup
+import { MomentModule }          from 'angular2-moment';    // optional, provides moment-style pipes for date formatting
+
+@NgModule({
+  imports: [
+    NgIdleKeepaliveModule.forRoot(),
+    MomentModule,
+    //...
+  ],
+  // ...
+})
+export class AppModule { }
+```
+
+## Usage
+
+Import `Idle`, `DEFAULT_INTERRUPTSOURCES`, `Keepalive` inside `app.component.ts`.
+```typescript
+//...
+import { Idle }                     from '@ng-idle/core';
+import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
+import { Keepalive }                from '@ng-idle/keepalive';
+//...
+export class AppComponent implements OnInit, OnDestroy
+{
+  // @caliatys/cognito-service
+  public  cognitoService  : CognitoService = new CognitoService(CognitoConst);
+  public  isAuthenticated : boolean;
+
+  // Session with : @ng-idle/core - @ng-idle/keepalive - @caliatys/cognito-service
+  public  idleState : string  = 'Not started.';
+  public  timedOut  : boolean = null;
+  public  lastPing ?: Date    = null;
+  private logoutSub : Subscription;
+
+  constructor
+  (
+    private idle      : Idle,
+    private keepalive : Keepalive
+  )
+  {
+  }
+
+  public ngOnInit() : void
+  {
+    this.logoutSub       = this.logoutSubscription();
+    this.isAuthenticated = this.cognitoService.isAuthenticated();
+    this.setIdle();
+  }
+
+  public ngOnDestroy() : void
+  {
+    this.logoutSub.unsubscribe();
+  }
+
+  private setIdle() : void
+  {
+    this.timedOut = false;
+
+    this.idle.setIdle(5); // Sets an idle timeout of 5 seconds
+    this.idle.setTimeout(CognitoConst.sessionTime / 1000); // After X seconds (+ 5 idle seconds) of inactivity, the user will be considered timed out
+
+    this.idle.setInterrupts(DEFAULT_INTERRUPTSOURCES); // Sets the default interrupts, in this case, things like clicks, scrolls, touches to the document
+
+    this.idle.onIdleEnd.subscribe(() => this.idleState = 'No longer idle.');
+
+    this.idle.onIdleStart.subscribe(() => this.idleState = 'You\'ve gone idle!');
+    this.idle.onTimeoutWarning.subscribe((countdown) => this.idleState = 'You will time out in ' + countdown + ' seconds!');
+
+    this.keepalive.interval(5); // Sets the ping interval to 5 seconds
+
+    this.keepalive.onPing.subscribe(() =>
+    {
+      this.cognitoService.updateSessionTime();
+      this.lastPing = new Date();
+    });
+
+    this.idle.onTimeout.subscribe(() =>
+    {
+      this.idleState = 'Timed out!';
+      this.timedOut  = true;
+      this.cognitoService.emitLogout.emit();
+    });
+
+    this.resetIdle();
+  }
+
+  private resetIdle() : void
+  {
+    this.idle.watch();
+    this.idleState = 'Started.';
+    this.timedOut  = false;
+  }
+
+  private logoutSubscription() : Subscription
+  {
+    let logoutSub : Subscription = null;
+    logoutSub = this.cognitoService.emitLogout.subscribe(() =>
+    {
+      this.isAuthenticated = false;
+      this.cognitoService.signOut();
+    });
+    return logoutSub;
+  }
+}
+```
+
 Import `CognitoService` and `CognitoConst` inside a component :
 ```typescript
+//...
 import { CognitoService } from '@caliatys/cognito-service';
 import { CognitoConst }   from './cognito.const';
 import { RespType }       from '@caliatys/cognito-service'; // Response enum (onSucces, onFailure, ...)
 import { AuthType }       from '@caliatys/cognito-service'; // Provider enum (google, facebook, ...)
-
-@Component({
-  selector    : 'app-root',
-  templateUrl : './app.component.html',
-  styleUrls   : ['./app.component.scss']
-})
-export class AppComponent
+//...
+export class LoginComponent
 {
   public cognitoService : CognitoService = new CognitoService(CognitoConst);
 }
@@ -79,7 +193,18 @@ this.cognitoService.resendConfirmationCode();
 ```
 
 #### Login
-Login an existing user :
+Login an existing user with Google or Cognito.
+
+##### Google
+```typescript
+this.cognitoService.authenticateUser(AuthType.GOOGLE).subscribe(res =>
+  // Success
+}, err => {
+  // Error
+});
+```
+
+##### Cognito
 ```typescript
 this.cognitoService.authenticateUser(AuthType.COGNITO, 'username', 'password').subscribe(res => {
 
@@ -304,14 +429,17 @@ ng serve
 "aws-sdk"                    : "2.247.1",
 "@types/gapi"                : "0.0.35",
 "@types/gapi.auth2"          : "0.0.47"
+"@ng-idle/core"              : "^6.0.0-beta.3",
+"@ng-idle/keepalive"         : "^6.0.0-beta.3",
+"angular2-moment"            : "^1.9.0"
 ```
 
 ## Roadmap
 
 ### In Progress
-- Angular 6 demo
 
 ### Planning
+- Translate & design Idle
 - Facebook
 
 ### Contributions
