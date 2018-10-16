@@ -240,8 +240,6 @@ export class LoginComponent
 
 ### External packages
 
-The following guide is a proposition of integration of the `CognitoService`.
-
 #### LoginComponent
 
 <details>
