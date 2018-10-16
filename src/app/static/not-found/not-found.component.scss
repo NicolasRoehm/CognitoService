@@ -1,0 +1,8 @@
+.not-found-container {
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+  .not-found {
+    width: 100%;
+  }
+}

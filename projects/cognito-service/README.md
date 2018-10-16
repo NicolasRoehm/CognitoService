@@ -1,16 +1,32 @@
 # Manage your users with AWS Cognito
-This Angular 6 Library is a wrapper around the client libraries `aws-sdk` and `amazon-cognito-identity-js` to easily manage your Cognito User Pool. It also uses the `@ng-idle` and `angular2-moment` plugin to manage the connected user's session.
+This Angular 6 Library is a wrapper around the [aws-sdk](https://github.com/aws/aws-sdk-js) and [amazon-cognito-identity-js](https://www.npmjs.com/package/amazon-cognito-identity-js) libraries to easily manage your Cognito User Pool.
 
 ## Note
-You can use this service with your own components or with our [authentication component](https://github.com/Caliatys/LoginComponent/).
-This project does not implements our component by default but we are using it for demo and tests.
+The sample application uses our authentication component : [@caliatys/login-form](https://github.com/Caliatys/LoginComponent/).
+It also implements [@ng-idle](https://github.com/HackedByChinese/ng2-idle) and [angular2-moment](https://github.com/urish/ngx-moment) packages to manage the connected user's session.
 
-Important : If you plan to use the `CognitoService` with our `LoginComponent` you will also need to follow the [@caliatys/login-form - Installation guide](https://github.com/Caliatys/LoginComponent/#installation).
+**Important** : If you plan to use the `CognitoService` as we do in the sample application, please follow the next chapters (External packages [installation](#external-packages) and [usage](#external-packages-1)) or refer to the dedicated documentations. You can also take a look at the `src/app/` folder to see how we use packages together in a concrete example of implementation.
+
+- [@caliatys/login-form - Readme](https://github.com/Caliatys/LoginComponent/#installation)
+- [@ng-idle - Example with sources](https://hackedbychinese.github.io/ng2-idle/)
+- [angular2-moment - Readme](https://www.npmjs.com/package/angular2-moment#installation)
 
 ## Table of contents
+<details>
+  <summary>Show / Hide</summary>
+
 - [Demo](#demo)
 - [Installation](#installation)
+  * [CognitoService](#cognitoservice)
+  * [External packages](#external-packages)
+    + [LoginComponent](#logincomponent)
+    + [NgIdle & Moment](#ngidle-&-moment)
 - [Usage](#usage)
+  * [CognitoService](#cognitoservice-1)
+  * [External packages](#external-packages-1)
+    + [LoginComponent](#logincomponent-1)
+    + [NgIdle & Moment](#ngidle-&-moment-1)
+- [Variables](#variables)
 - [Methods](#methods)
   * [Registration](#registration)
     + [Signup](#signup)
@@ -50,6 +66,7 @@ Important : If you plan to use the `CognitoService` with our `LoginComponent` yo
   * [Planning](#planning)
   * [Contributions](#contributions)
 - [Development](#development)
+</details>
 
 ## Demo
 
@@ -67,15 +84,18 @@ ng serve
 ```
 
 ## Installation
+
+### CognitoService
+
 ```sh
 npm install @caliatys/cognito-service --save
 ```
 
-Copy/paste [src/app/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/cognito.const.ts) and replace the parameters with your resource identifiers.
+Copy/paste [src/app/shared/consts/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/consts/cognito.const.ts) and replace the parameters with your resource identifiers.
 ```typescript
 export const CognitoConst = {
   storagePrefix    : 'AngularApp',
-  sessionTime      : 3500000, // In milliseconds (58 min = 3500000 ms)
+  sessionTime      : 10, // In seconds
   googleId         : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
   googleScope      : '',
   poolData         : {
@@ -90,9 +110,93 @@ export const CognitoConst = {
 };
 ```
 
+Copy/paste [src/app/shared/helpers/cognito.helper.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/helpers/cognito.helper.ts). This file is used to simplify the implementation of the `CognitoService` in your application while keeping a single instance of it.
+```typescript
+// Angular modules
+import { Injectable }     from '@angular/core';
+
+// External modules
+import { CognitoService } from '@caliatys/cognito-service';
+import { AuthType }       from '@caliatys/cognito-service';
+import { RespType }       from '@caliatys/cognito-service';
+
+// Consts
+import { CognitoConst }   from '../consts/cognito.const';
+
+@Injectable()
+export class CognitoHelper
+{
+  // Services
+  public  cognitoService : CognitoService = new CognitoService(CognitoConst);
+
+  // Consts
+  public  cognitoConst   : any            = CognitoConst;
+
+  // Enums
+  public  authType       : any            = AuthType;
+  public  respType       : any            = RespType;
+}
+```
+
 Add the API inside the `<head>` of `index.html` to enable authentication with Google :
 ```html
 <script src="https://apis.google.com/js/platform.js"></script>
+```
+
+Add `CognitoHelper` the providers of `app.module.ts` :
+```typescript
+// ...
+import { CognitoHelper } from './shared/helpers/cognito.helper';
+
+@NgModule({
+  // ...
+  providers :
+  [
+    CognitoHelper
+    //...
+  ],
+  // ...
+})
+export class AppModule { }
+```
+
+### External packages
+
+#### LoginComponent
+
+<details>
+  <summary>Show / Hide : Installation</summary>
+
+Install `@caliatys/login-form` :
+```sh
+npm install @caliatys/login-form --save
+```
+
+Import the `LoginFormModule` into a `login.module.ts` :
+```typescript
+// ...
+import { LoginFormModule } from '@caliatys/login-form';
+
+@NgModule({
+  // ...
+  imports :
+  [
+    LoginFormModule
+    //...
+  ],
+  // ...
+})
+export class LoginModule { }
+```
+</details>
+
+#### NgIdle & Moment
+<details>
+  <summary>Show / Hide : Installation</summary>
+
+Install `@ng-idle` :
+```sh
+npm install @ng-idle/core @ng-idle/keepalive angular2-moment --save
 ```
 
 Add `NgIdleKeepaliveModule` and `MomentModule` into the imports of `app.module.ts` :
@@ -111,64 +215,292 @@ import { MomentModule }          from 'angular2-moment';    // optional, provide
 })
 export class AppModule { }
 ```
+</details>
 
 ## Usage
 
-Import `Idle`, `DEFAULT_INTERRUPTSOURCES`, `Keepalive` inside `app.component.ts`.
+### CognitoService
+To start using the service, import the `CognitoHelper` into a component (`LoginComponent` for example) :
 ```typescript
+//...
+import { CognitoHelper } from './shared/helpers/cognito.helper';
+//...
+export class LoginComponent
+{
+  constructor(public cognitoHelper : CognitoHelper)
+  {
+    // this.cognitoHelper.cognitoService...
+  }
+}
+```
+
+### External packages
+
+The following guide is a proposition of integration of the `CognitoService`.
+
+#### LoginComponent
+
+<details>
+  <summary>Show / Hide : Usage</summary>
+
+Add the `cal-login-form` component into `login.component.html` :
+```html
+<cal-login-form #loginForm 
+  (initialized)="initialized()" 
+  (signUp)="signUp()" 
+  (login)="login($event)" 
+  (loginSocial)="loginSocial($event)" 
+  (forgotPwd)="forgotPassword($event)" 
+  (sendFirstPwd)="firstPassword($event)" 
+  (sendResetPwd)="resetPassword($event)" 
+  (saveMfaKey)="saveMfaKey($event)" 
+  (sendMfaCode)="sendMfaCode($event)" 
+  (stepUsr)="stepUsr($event)" 
+  (stepPwd)="stepPwd($event)">
+</cal-login-form>
+```
+
+The component accepts several inputs that are listed in the [documentation](https://github.com/Caliatys/LoginComponent#inputs).
+
+Here is how we integrate the output events with `LoginFormComponent` in [login.component.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.component.ts) :
+
+```typescript
+// Angular modules
+import { Component }          from '@angular/core';
+import { ViewChild }          from '@angular/core';
+import { Router }             from '@angular/router';
+
+// External modules
+import { LoginFormComponent } from '@caliatys/login-form';
+
+// Helpers
+import { CognitoHelper }      from '../shared/helpers/cognito.helper';
+
+// Enums
+import { AuthError }          from '../shared/enums/auth.enum';
+
+@Component({
+  moduleId    : module.id,
+  templateUrl : 'login.component.html',
+  styleUrls   : ['login.component.scss']
+})
+export class LoginComponent
+{
+  // @caliatys/login-form
+  @ViewChild('loginForm') loginForm : LoginFormComponent;
+
+  constructor
+  (
+    public  router        : Router,
+    private cognitoHelper : CognitoHelper
+  )
+  {
+    if(this.cognitoHelper.cognitoService.isAuthenticated())
+      this.onSuccessLogin();
+  }
+
+  // Actions :
+
+  // Google login
+
+  public loginSocial($event : any) : void
+  {
+    let social : string = null;
+    social = $event.social;
+
+    if(social !== this.cognitoHelper.authType.GOOGLE)
+      return;
+
+    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
+    {
+      this.onSuccessLogin();
+    },
+    err =>
+    {
+      console.error(err);
+    });
+  }
+
+  // Cognito login
+
+  public login($event : any) : void
+  {
+    let username : string = null;
+    let password : string = null;
+    username = $event.username;
+    password = $event.password;
+
+    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
+    {
+      // Success login
+      if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
+        this.onSuccessLogin();
+
+      // First connection
+      if(res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
+        this.loginForm.showPwdForm(true);
+
+      // MFA required
+      if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
+        this.loginForm.showMfaForm();
+
+      // MFA setup : associate secret code
+      if(res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
+        this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
+    },
+    err =>
+    {
+      // Error
+      if(err.type === this.cognitoHelper.respType.ON_FAILURE)
+        console.error('LoginComponent : login -> authenticateUser', err);
+
+      // MFA setup : error
+      if(err.type === this.cognitoHelper.respType.MFA_SETUP_ON_FAILURE)
+        console.error('LoginComponent : login -> authenticateUser', err);
+    });
+  }
+
+  // First connection
+
+  public firstPassword($event : any) : void
+  {
+    let username    : string = null;
+    let newPassword : string = null;
+    username    = $event.username;
+    newPassword = $event.password;
+
+    this.cognitoHelper.cognitoService.newPasswordRequired(newPassword).subscribe(res =>
+    {
+      // Success
+      if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
+        this.loginForm.hidePwdForm();
+      // MFA required
+      if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
+        this.loginForm.showMfaForm();
+    },
+    err =>
+    {
+      console.error('LoginComponent : firstPassword -> changePassword', err);
+    });
+  }
+
+  // Forgot password
+
+  public forgotPassword($event : any) : void
+  {
+    let username : string = null;
+    username = $event.username;
+
+    if(!username)
+      return; // Username required
+
+    this.cognitoHelper.cognitoService.forgotPassword(username).subscribe(res =>
+    {
+      // Verification code
+      if(res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
+        this.loginForm.showPwdForm(false);
+    },
+    err =>
+    {
+      console.error('LoginComponent : forgotPassword -> forgotPassword', err);
+    });
+  }
+
+  // Complete the forgot password flow
+
+  public resetPassword($event : any) : void
+  {
+    let newPassword : string = null;
+    let verifCode   : string = null;
+    newPassword = $event.password;
+    verifCode   = $event.verificationCode;
+
+    this.cognitoHelper.cognitoService.confirmPassword(newPassword, verifCode).subscribe(res =>
+    {
+      this.loginForm.hidePwdForm(newPassword); // Password updated successfully
+    },
+    err =>
+    {
+      console.error('LoginComponent : resetPassword -> confirmPassword', err);
+    });
+  }
+```
+</details>
+
+#### NgIdle & Moment
+
+<details>
+  <summary>Show / Hide : Usage</summary>
+
+Here is how we manage the user's session with `Idle`, `DEFAULT_INTERRUPTSOURCES`, `Keepalive` in [app.component.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.component.ts) :
+```typescript
+// Angular modules
 import { Component }                from '@angular/core';
 import { OnInit }                   from '@angular/core';
 import { OnDestroy }                from '@angular/core';
-import { CognitoService }           from '@caliatys/cognito-service';
+import { Router }                   from '@angular/router';
+
+// External modules
+import { Subscription }             from 'rxjs';
 import { Idle }                     from '@ng-idle/core';
 import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
 import { Keepalive }                from '@ng-idle/keepalive';
-import { Subscription }             from 'rxjs';
-import { CognitoConst }             from './cognito.const';
+
+// Helpers
+import { CognitoHelper }            from './shared/helpers/cognito.helper';
 
 @Component({
   selector    : 'app-root',
   templateUrl : './app.component.html',
-  styleUrls   : ['./app.component.css']
+  styleUrls   : ['./app.component.scss']
 })
 export class AppComponent implements OnInit, OnDestroy
 {
-  // @caliatys/cognito-service
-  public  cognitoService  : CognitoService = new CognitoService(CognitoConst);
-  public  isAuthenticated : boolean;
+  public  isAuthenticated : boolean = false;
 
   // Session with : @ng-idle/core - @ng-idle/keepalive - @caliatys/cognito-service
   public  idleState : string  = 'Not started.';
   public  timedOut  : boolean = null;
   public  lastPing ?: Date    = null;
+
+  // Subscriptions
+  private loginSub  : Subscription;
   private logoutSub : Subscription;
 
   constructor
   (
-    private idle      : Idle,
-    private keepalive : Keepalive
+    private cognitoHelper : CognitoHelper,
+    private router        : Router,
+    private idle          : Idle,
+    private keepalive     : Keepalive
   )
   {
   }
 
   public ngOnInit() : void
   {
-    this.logoutSub       = this.logoutSubscription();
-    this.isAuthenticated = this.cognitoService.isAuthenticated();
+    this.isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
+
     this.setIdle();
+
+    this.loginSub  = this.loginSubscription();
+    this.logoutSub = this.logoutSubscription();
   }
 
   public ngOnDestroy() : void
   {
+    this.loginSub.unsubscribe();
     this.logoutSub.unsubscribe();
   }
+
+  // Session management
 
   private setIdle() : void
   {
     this.timedOut = false;
 
     this.idle.setIdle(5); // Sets an idle timeout of 5 seconds
-    this.idle.setTimeout(CognitoConst.sessionTime / 1000); // After X seconds (+ 5 idle seconds) of inactivity, the user will be considered timed out
+    this.idle.setTimeout(this.cognitoHelper.cognitoConst.sessionTime); // After X seconds (+ 5 idle seconds) of inactivity, the user will be considered timed out
 
     this.idle.setInterrupts(DEFAULT_INTERRUPTSOURCES); // Sets the default interrupts, in this case, things like clicks, scrolls, touches to the document
 
@@ -181,7 +513,7 @@ export class AppComponent implements OnInit, OnDestroy
 
     this.keepalive.onPing.subscribe(() =>
     {
-      this.cognitoService.updateSessionTime();
+      this.cognitoHelper.cognitoService.updateSessionTime();
       this.lastPing = new Date();
     });
 
@@ -189,7 +521,9 @@ export class AppComponent implements OnInit, OnDestroy
     {
       this.idleState = 'Timed out!';
       this.timedOut  = true;
-      this.cognitoService.emitLogout.emit();
+      if(this.cognitoHelper.cognitoService.isAuthenticated())
+        this.cognitoHelper.cognitoService.signOut();
+      this.resetIdle();
     });
 
     this.resetIdle();
@@ -202,31 +536,47 @@ export class AppComponent implements OnInit, OnDestroy
     this.timedOut  = false;
   }
 
+  // Subscription
+
+  private loginSubscription() : Subscription
+  {
+    let loginSub : Subscription = null;
+    loginSub = this.cognitoHelper.cognitoService.onLogin.subscribe(() =>
+    {
+      this.isAuthenticated = true;
+    });
+    return loginSub;
+  }
+
   private logoutSubscription() : Subscription
   {
     let logoutSub : Subscription = null;
-    logoutSub = this.cognitoService.emitLogout.subscribe(() =>
+    logoutSub = this.cognitoHelper.cognitoService.onLogout.subscribe(() =>
     {
       this.isAuthenticated = false;
-      this.cognitoService.signOut();
+      this.router.navigate([ '/login' ]);
     });
     return logoutSub;
   }
+
 }
 ```
 
-Import `CognitoService` and `CognitoConst` inside a component :
+If you want to display the idle state, you can add it to `app.component.html` :
+```html
+<div *ngIf="isAuthenticated">
+  <p>{{ idleState }}</p>
+  <p *ngIf="lastPing">Last keepalive ping {{ lastPing | amTimeAgo }}</p>
+</div>
+```
+</details>
+
+## Variables
+
 ```typescript
-//...
-import { CognitoService } from '@caliatys/cognito-service';
-import { CognitoConst }   from './cognito.const';
-import { RespType }       from '@caliatys/cognito-service'; // Response enum (onSucces, onFailure, ...)
-import { AuthType }       from '@caliatys/cognito-service'; // Provider enum (google, facebook, ...)
-//...
-export class LoginComponent
-{
-  public cognitoService : CognitoService = new CognitoService(CognitoConst);
-}
+// Events that you can subscribe to
+public onLogin  : EventEmitter<null>;
+public onLogout : EventEmitter<null>;
 ```
 
 ## Methods
@@ -470,7 +820,7 @@ this.cognitoService.setAdmin();
 
 ## Dependencies
 
-**Important Note** : This project uses the following dependencies :
+**Important** : This project uses the following dependencies :
 ```json
 "peerDependencies"             : {
   "@angular/common"            : "^6.0.0-rc.0 || ^6.0.0",
@@ -481,10 +831,7 @@ this.cognitoService.setAdmin();
   "amazon-cognito-identity-js" : "2.0.6",
   "aws-sdk"                    : "2.247.1",
   "@types/gapi"                : "0.0.35",
-  "@types/gapi.auth2"          : "0.0.47",
-  "@ng-idle/core"              : "^6.0.0-beta.3",
-  "@ng-idle/keepalive"         : "^6.0.0-beta.3",
-  "angular2-moment"            : "^1.9.0"
+  "@types/gapi.auth2"          : "0.0.47"
 }
 ```
 

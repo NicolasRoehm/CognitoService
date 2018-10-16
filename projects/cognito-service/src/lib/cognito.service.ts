@@ -27,7 +27,8 @@ export enum GoogleAction
 })
 export class CognitoService
 {
-  public  emitLogout       : EventEmitter<null>;
+  public  onLogin          : EventEmitter<null>;
+  public  onLogout         : EventEmitter<null>;
 
   // private MFA              : boolean = false;
 
@@ -57,7 +58,8 @@ export class CognitoService
     private http ?: HttpClient
   )
   {
-    this.emitLogout          = new EventEmitter();
+    this.onLogin             = new EventEmitter();
+    this.onLogout            = new EventEmitter();
 
     this.storagePrefix       = cognitoConst.storagePrefix + '_CognitoService_';
     this.sessionTime         = cognitoConst.sessionTime  || 3500000;
@@ -98,20 +100,20 @@ export class CognitoService
     if(!expiresAt)
       return;
 
-    if(nextTime < (expiresAt*1000))
+    if(nextTime < (expiresAt))
     {
       this.setExpiresAt(nextTime);
       return;
     }
 
     // Refresh token
-    this.refreshCognitoSession().subscribe(res =>
+    this.refreshSession().subscribe(res =>
     {
       this.setExpiresAt(nextTime);
     },
     err =>
     {
-      this.emitLogout.emit(); // Emmit logout
+      this.signOut();
     });
   }
 
@@ -125,7 +127,7 @@ export class CognitoService
 
     if(!max)
       return null;
-    remaining = (max*1000) - now;
+    remaining = max - now;
     if(remaining <= 0)
       return null;
     return remaining;
@@ -687,6 +689,7 @@ export class CognitoService
           this.callGoogle(GoogleAction.AUTHENTICATE).subscribe(res => { return resolve(res); }, err => { return reject(err); });
           break;
         default :
+          console.error('Provider not recognized : use the AuthType enum to send an authorized authentication provider.');
           break;
       }
     }));
@@ -708,6 +711,7 @@ export class CognitoService
           this.callGoogle(GoogleAction.REFRESH).subscribe(res => { return resolve(res); }, err => { return reject(err); });
           break;
         default :
+          console.error('Provider not recognized : the user must be logged in before updating the session.');
           break;
       }
     }));
@@ -723,13 +727,15 @@ export class CognitoService
       case AuthType.COGNITO :
         this.signOutCognito();
         break;
-      case AuthType.GOOGLE  :
+      case AuthType.GOOGLE :
         this.callGoogle(GoogleAction.LOGOUT);
         break;
       default :
+        console.error('Provider not recognized : the user must be logged in before logging out.');
         break;
     }
 
+    this.onLogout.emit();
     this.clearStorage();
   }
 
@@ -766,6 +772,8 @@ export class CognitoService
           this.setUsername(username);
           this.updateTokens(session);
           this.setProvider(AuthType.COGNITO);
+
+          this.onLogin.emit();
           return resolve({ type : RespType.ON_SUCCESS, data : session });
         },
         onFailure : (err) =>
@@ -921,7 +929,7 @@ export class CognitoService
         this.setExpiresAt(response.expires_at);
         this.setProvider(AuthType.GOOGLE);
 
-        // this.buildGoogleCredentials();
+        this.onLogin.emit();
         return resolve({ type : RespType.ON_SUCCESS, data : profile });
       },
       (onRejected : any) =>
@@ -1040,7 +1048,7 @@ export class CognitoService
       accessToken          : session.getAccessToken().getJwtToken(),
       accessTokenExpiresAt : session.getAccessToken().getExpiration(),
       idToken              : session.getIdToken().getJwtToken(),
-      idTokenExpiresAt     : session.getIdToken().getExpiration(),
+      idTokenExpiresAt     : session.getIdToken().getExpiration() * 1000,
       refreshToken         : session.getRefreshToken().getToken()
     };
     tokensStr = JSON.stringify(tokensObj);

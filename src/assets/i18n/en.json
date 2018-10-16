@@ -7,5 +7,9 @@
   "ERROR_VERIF_AUTHORIZATION"    : "Authorization exception, please contact your administrator",
   "ERROR_VERIF_CODE"             : "Invalid verification code provided, please try again",
   "ERROR_AMAZON_POLICY"          : "Violation of Amazon's policy options, please read them carefully",
-  "SUCCESS_UPDATE_PWD"           : "Password successfully updated"
+  "SUCCESS_UPDATE_PWD"           : "Password successfully updated",
+
+  "NOT_FOUND"        : "404 - Page not found",
+  "GO_TO_HOMEPAGE"   : "Go to homepage",
+  "GO_TO_LOGIN_PAGE" : "Go to login page"
 }

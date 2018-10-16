@@ -1,37 +1,16 @@
-<div class="container">
-  <div class="row mt-5">
-    <div class="col" *ngIf="!isAuthenticated">
-      <!-- NOTE: Login -->
-      <cal-login-form #loginForm 
-        hidePwdPolicyOnLogin="true" 
-        (login)="login($event)" 
-        (loginSocial)="loginSocial($event)" 
-        (forgotPwd)="forgotPassword($event)" 
-        (sendFirstPwd)="firstPassword($event)" 
-        (sendResetPwd)="lostPassword($event)">
-      </cal-login-form>
-    </div>
-    <div class="col" *ngIf="isAuthenticated">
-      <div class="row">
-        <div class="col">
-          <!-- NOTE: Logout -->
-          <button mat-button color="primary" (click)="logout()">
-            Logout
-          </button>
-          <button mat-button color="accent" (click)="request()">
-            Request
-          </button>
-          <button mat-button color="accent" (click)="refresh()">
-            Refresh
-          </button>
-        </div>
-      </div>
-      <div class="row mt-3">
-        <div class="col">
+<div class="scrollable-container">
+  <div class="layout">
+
+    <router-outlet></router-outlet>
+
+    <div class="container">
+      <div class="row mt-3 no-gutters" *ngIf="isAuthenticated">
+        <div class="col text-center">
           <p><strong>{{idleState}}</strong></p>
           <p *ngIf="lastPing"><small>Last keepalive ping <strong>{{ lastPing | amTimeAgo }}</strong></small></p>
         </div>
       </div>
     </div>
+
   </div>
 </div>
