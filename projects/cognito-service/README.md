@@ -133,8 +133,8 @@ export class CognitoHelper
   public  cognitoConst   : any            = CognitoConst;
 
   // Enums
-  public  authType       : any            = AuthType;
-  public  respType       : any            = RespType;
+  public  authType                        = AuthType;
+  public  respType                        = RespType;
 }
 ```
 
