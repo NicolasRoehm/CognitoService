@@ -11,9 +11,6 @@ import { LoginFormComponent } from '@caliatys/login-form';
 // Helpers
 import { CognitoHelper }      from '../shared/helpers/cognito.helper';
 
-// Enums
-import { AuthError }          from '../shared/enums/auth.enum';
-
 @Component({
   moduleId    : module.id,
   templateUrl : 'login.component.html',
@@ -44,24 +41,19 @@ export class LoginComponent
 
   public loginSocial($event : any) : void
   {
-    if(!$event)
-      return;
-
     let social : string = null;
     social = $event.social;
 
     if(social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
-    // Show loader
     this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
     {
-      console.log(res);
       this.onSuccessLogin();
     },
     err =>
     {
-      console.error(err);
+      console.error('LoginComponent : loginSocial -> authenticateUser', err);
     });
   }
 
@@ -74,7 +66,6 @@ export class LoginComponent
     username = $event.username;
     password = $event.password;
 
-    // Show loader
     this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
     {
       // Success login
@@ -95,21 +86,9 @@ export class LoginComponent
     },
     err =>
     {
-      // Hide loader
-
-      // Error
-      if(err.type === this.cognitoHelper.respType.ON_FAILURE)
-      {
-        console.error('LoginComponent : login -> authenticateUser', err);
-        this.snackBar.open(this.translate.instant('ERROR_LOGIN_FAILED'), 'X');
-      }
-
-      // MFA setup : error
-      if(err.type === this.cognitoHelper.respType.MFA_SETUP_ON_FAILURE)
-      {
-        console.error('LoginComponent : login -> authenticateUser', err);
-        this.snackBar.open(err.data, 'X');
-      }
+      // ON_FAILURE / MFA_SETUP_ON_FAILURE
+      console.error('LoginComponent : login -> authenticateUser', err);
+      this.snackBar.open(err.data.message, 'X');
     });
   }
 
@@ -126,17 +105,19 @@ export class LoginComponent
     {
       // Success
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
+      {
         this.loginForm.hidePwdForm();
+        this.login($event);
+      }
+
       // MFA required
       if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
-
-      this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
     },
     err =>
     {
       console.error('LoginComponent : firstPassword -> changePassword', err);
-      this.snackBar.open(this.translate.instant('ERROR_AMAZON_POLICY'), 'x');
+      this.snackBar.open(err.data.message, 'X');
     });
   }
 
@@ -161,31 +142,8 @@ export class LoginComponent
     },
     err =>
     {
-      let errorMsg  : string = null;
-      let errorCode : string = null;
-      errorCode = err.data;
-
-      switch(errorCode)
-      { // NOTE: This example use AWS errors
-        case AuthError.FORGOT_PWD_VERIF_USER :
-          errorMsg = this.translate.instant('ERROR_INCORRECT_USER');
-          break;
-        case AuthError.FORGOT_PWD_VERIF_INIT :
-          errorMsg = this.translate.instant('ERROR_FORGOT_PASS_VERIF_INIT');
-          break;
-        case AuthError.VERIF_LIMIT :
-          errorMsg = this.translate.instant('ERROR_VERIF_LIMIT');
-          break;
-        case AuthError.VERIF_AUTHORIZATION :
-          errorMsg = this.translate.instant('ERROR_VERIF_AUTHORIZATION');
-          break;
-        default :
-          errorMsg = this.translate.instant('ERROR_AMAZON_POLICY');
-          break;
-      }
-
       console.error('LoginComponent : forgotPassword -> forgotPassword', err);
-      this.snackBar.open(errorMsg, 'X');
+      this.snackBar.open(err.data.message, 'X');
     });
   }
 
@@ -207,25 +165,8 @@ export class LoginComponent
     },
     err =>
     {
-      let errorMsg  : string = null;
-      let errorCode : string = null;
-      errorCode = err.data;
-
-      switch(errorCode)
-      { // NOTE: This example use AWS errors
-        case AuthError.VERIF_CODE :
-          errorMsg = this.translate.instant('ERROR_VERIF_CODE');
-          break;
-        case AuthError.VERIF_LIMIT :
-          errorMsg = this.translate.instant('ERROR_VERIF_LIMIT');
-          break;
-        default :
-          errorMsg = this.translate.instant('ERROR_AMAZON_POLICY');
-          break;
-      }
-
       console.error('LoginComponent : resetPassword -> confirmPassword', err);
-      this.snackBar.open(errorMsg, 'x');
+      this.snackBar.open(err.data.message, 'X');
     });
   }
 

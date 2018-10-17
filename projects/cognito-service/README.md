@@ -5,7 +5,7 @@ This Angular 6 Library is a wrapper around the [aws-sdk](https://github.com/aws/
 The sample application uses our authentication component : [@caliatys/login-form](https://github.com/Caliatys/LoginComponent/).
 It also implements [@ng-idle](https://github.com/HackedByChinese/ng2-idle) and [angular2-moment](https://github.com/urish/ngx-moment) packages to manage the connected user's session.
 
-**Important** : If you plan to use the `CognitoService` as we do in the sample application, please follow the next chapters (External packages [installation](#external-packages) and [usage](#external-packages-1)) or refer to the dedicated documentations. You can also take a look at the `src/app/` folder to see how we use packages together in a concrete example of implementation.
+**Important** : If you plan to use the `CognitoService` as we do in the sample application, please follow the next chapters (External packages [installation](#external-packages) and [usage](#external-packages-1)) or refer to the dedicated documentations. You can also take a look at the [src/app](https://github.com/Caliatys/CognitoService/blob/master/src/app/) folder to see how we use packages together in a concrete example of implementation.
 
 - [@caliatys/login-form - Readme](https://github.com/Caliatys/LoginComponent/#installation)
 - [@ng-idle - Example with sources](https://hackedbychinese.github.io/ng2-idle/)
@@ -138,12 +138,12 @@ export class CognitoHelper
 }
 ```
 
-Add the API inside the `<head>` of `index.html` to enable authentication with Google :
+Add the API inside the `<head>` of [index.html](https://github.com/Caliatys/CognitoService/blob/master/src/index.html) to enable authentication with Google :
 ```html
 <script src="https://apis.google.com/js/platform.js"></script>
 ```
 
-Add `CognitoHelper` the providers of `app.module.ts` :
+Add `CognitoHelper` the providers of [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
 ```typescript
 // ...
 import { CognitoHelper } from './shared/helpers/cognito.helper';
@@ -172,7 +172,13 @@ Install `@caliatys/login-form` :
 npm install @caliatys/login-form --save
 ```
 
-Import the `LoginFormModule` into a `login.module.ts` :
+Create a new login component and a new login module :
+```sh
+ng generate component login
+ng generate module login
+```
+
+Import the `LoginFormModule` into [login.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.module.ts) :
 ```typescript
 // ...
 import { LoginFormModule } from '@caliatys/login-form';
@@ -188,6 +194,67 @@ import { LoginFormModule } from '@caliatys/login-form';
 })
 export class LoginModule { }
 ```
+
+Add a new route to the login page into [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
+```typescript
+//...
+{
+  path         : 'login',
+  loadChildren : './login/login.module#LoginModule',
+}
+//...
+```
+
+Let's create an home component with its module :
+```sh
+ng generate component home
+ng generate module home
+```
+
+To restrict the access to the home page, the routing system requires an [auth-guard.helper.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/helpers/auth-guard.helper.ts) :
+```typescript
+// Angular modules
+import { Injectable }    from '@angular/core';
+import { Router }        from '@angular/router';
+import { Route }         from '@angular/router';
+import { CanLoad }       from '@angular/router';
+
+// Helpers
+import { CognitoHelper } from '../../shared/helpers/cognito.helper';
+
+@Injectable()
+export class AuthGuardHelper implements CanLoad
+{
+  constructor(router : Router, cognitoHelper : CognitoHelper) { }
+
+  public canLoad(route : Route) : boolean
+  {
+    return this.isAuthenticated();
+  }
+
+  private isAuthenticated() : boolean
+  {
+    let isAuthenticated : boolean = false;
+    isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
+
+    if(!isAuthenticated)
+      this.router.navigate(['/login']);
+
+    return isAuthenticated;
+  }
+}
+```
+
+Now we can add a new protected route to the home page into [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
+```typescript
+import { AuthGuardHelper } from './shared/helpers/auth-guard.helper';
+//...
+{
+  path         : 'home',
+  loadChildren : './home/home.module#HomeModule',
+  canLoad      : [ AuthGuardHelper ]
+},
+```
 </details>
 
 #### NgIdle & Moment
@@ -199,7 +266,7 @@ Install `@ng-idle` :
 npm install @ng-idle/core @ng-idle/keepalive angular2-moment --save
 ```
 
-Add `NgIdleKeepaliveModule` and `MomentModule` into the imports of `app.module.ts` :
+Add `NgIdleKeepaliveModule` and `MomentModule` into the imports of [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
 ```typescript
 //...
 import { NgIdleKeepaliveModule } from '@ng-idle/keepalive'; // this includes the core NgIdleModule but includes keepalive providers for easy wireup
@@ -227,7 +294,7 @@ import { CognitoHelper } from './shared/helpers/cognito.helper';
 //...
 export class LoginComponent
 {
-  constructor(public cognitoHelper : CognitoHelper)
+  constructor(cognitoHelper : CognitoHelper)
   {
     // this.cognitoHelper.cognitoService...
   }
@@ -241,7 +308,7 @@ export class LoginComponent
 <details>
   <summary>Show / Hide : Usage</summary>
 
-Add the `cal-login-form` component into `login.component.html` :
+Add the `cal-login-form` component into [login.component.html](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.component.html) :
 ```html
 <cal-login-form #loginForm 
   (initialized)="initialized()" 
@@ -267,15 +334,13 @@ Here is how we integrate the output events with `LoginFormComponent` in [login.c
 import { Component }          from '@angular/core';
 import { ViewChild }          from '@angular/core';
 import { Router }             from '@angular/router';
+import { MatSnackBar }        from '@angular/material';
 
 // External modules
 import { LoginFormComponent } from '@caliatys/login-form';
 
 // Helpers
 import { CognitoHelper }      from '../shared/helpers/cognito.helper';
-
-// Enums
-import { AuthError }          from '../shared/enums/auth.enum';
 
 @Component({
   moduleId    : module.id,
@@ -290,6 +355,7 @@ export class LoginComponent
   constructor
   (
     public  router        : Router,
+    public  snackBar      : MatSnackBar,
     private cognitoHelper : CognitoHelper
   )
   {
@@ -348,13 +414,9 @@ export class LoginComponent
     },
     err =>
     {
-      // Error
-      if(err.type === this.cognitoHelper.respType.ON_FAILURE)
-        console.error('LoginComponent : login -> authenticateUser', err);
-
-      // MFA setup : error
-      if(err.type === this.cognitoHelper.respType.MFA_SETUP_ON_FAILURE)
-        console.error('LoginComponent : login -> authenticateUser', err);
+      // ON_FAILURE / MFA_SETUP_ON_FAILURE
+      console.error('LoginComponent : login -> authenticateUser', err);
+      this.snackBar.open(err.data.message, 'X');
     });
   }
 
@@ -379,6 +441,7 @@ export class LoginComponent
     err =>
     {
       console.error('LoginComponent : firstPassword -> changePassword', err);
+      this.snackBar.open(err.data.message, 'X');
     });
   }
 
@@ -401,10 +464,11 @@ export class LoginComponent
     err =>
     {
       console.error('LoginComponent : forgotPassword -> forgotPassword', err);
+      this.snackBar.open(err.data.message, 'X');
     });
   }
 
-  // Complete the forgot password flow
+  // Reset password : complete the forgot password flow
 
   public resetPassword($event : any) : void
   {
@@ -420,7 +484,13 @@ export class LoginComponent
     err =>
     {
       console.error('LoginComponent : resetPassword -> confirmPassword', err);
+      this.snackBar.open(err.data.message, 'X');
     });
+  }
+
+  private onSuccessLogin() : void
+  {
+    this.router.navigate(['/home']);
   }
 ```
 </details>
@@ -560,7 +630,7 @@ export class AppComponent implements OnInit, OnDestroy
 }
 ```
 
-If you want to display the idle state, you can add it to `app.component.html` :
+If you want to display the idle state, you can add it to [app.component.html](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.component.html) :
 ```html
 <div *ngIf="isAuthenticated">
   <p>{{ idleState }}</p>

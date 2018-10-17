@@ -445,7 +445,7 @@ export class CognitoService
         onFailure : (err : any) =>
         {
           console.error('CognitoService : newPasswordRequired -> completeNewPasswordChallenge', err);
-          return reject(err);
+          return reject({ type : RespType.ON_FAILURE, data : err });
         },
         mfaRequired : (challengeName : any, challengeParameters : any) =>
         {
@@ -477,7 +477,7 @@ export class CognitoService
         onFailure : (err : Error) =>
         {
           console.error('CognitoService : forgotPassword -> forgotPassword', err);
-          return reject(err);
+          return reject({ type : RespType.ON_FAILURE, data : err });
         },
         inputVerificationCode : (data : any) =>
         {
@@ -536,7 +536,7 @@ export class CognitoService
         onFailure : (err : Error) =>
         {
           console.error('CognitoService : confirmPassword -> confirmPassword', err);
-          return reject(err);
+          return reject({ type : RespType.ON_FAILURE, data : err });
         }
       });
     }));
@@ -689,7 +689,7 @@ export class CognitoService
           this.callGoogle(GoogleAction.AUTHENTICATE).subscribe(res => { return resolve(res); }, err => { return reject(err); });
           break;
         default :
-          console.error('Provider not recognized : use the AuthType enum to send an authorized authentication provider.');
+          console.error('Provider not recognized : use the AuthType enum to send an authorized authentication provider');
           break;
       }
     }));
@@ -711,7 +711,7 @@ export class CognitoService
           this.callGoogle(GoogleAction.REFRESH).subscribe(res => { return resolve(res); }, err => { return reject(err); });
           break;
         default :
-          console.error('Provider not recognized : the user must be logged in before updating the session.');
+          console.error('Provider not recognized : the user must be logged in before updating the session');
           break;
       }
     }));
@@ -731,7 +731,7 @@ export class CognitoService
         this.callGoogle(GoogleAction.LOGOUT);
         break;
       default :
-        console.error('Provider not recognized : the user must be logged in before logging out.');
+        console.error('Provider not recognized : the user must be logged in before logging out');
         break;
     }
 
@@ -855,12 +855,12 @@ export class CognitoService
         initAuth.then((googleAuth : gapi.auth2.GoogleAuth) =>
         {
           this.googleAuth = googleAuth;
-          return resolve();
+          return resolve({ type : RespType.ON_SUCCESS, data : googleAuth });
         },
         (reason : { error : string, details : string }) =>
         {
           console.error('CognitoService : initGoogle -> GoogleAuth', reason);
-          return reject();
+          return reject({ type : RespType.ON_FAILURE, data : reason });
         });
       });
     }));
@@ -875,14 +875,14 @@ export class CognitoService
         this.makeGoogle(action).subscribe(res => { return resolve(res); }, err => { return reject(err); });
       }
       else
-      { // Init google
-        this.initGoogle().subscribe(res =>
+      {
+        this.initGoogle().subscribe(response =>
         {
           this.makeGoogle(action).subscribe(res => { return resolve(res); }, err => { return reject(err); });
         },
-        err =>
+        error =>
         {
-          console.error('CognitoService : callGoogle -> initGoogle', err);
+          return reject(error);
         });
       }
     }));
@@ -903,6 +903,9 @@ export class CognitoService
         case GoogleAction.LOGOUT :
           this.signOutGoogle();
           return resolve();
+        default :
+          console.error('Google action not recognized : authenticate / refresh / logout');
+          break;
       }
     }));
   }
