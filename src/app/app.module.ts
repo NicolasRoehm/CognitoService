@@ -17,8 +17,8 @@ import { MomentModule }            from 'angular2-moment';
 import { CognitoHelper }           from './shared/helpers/cognito.helper';
 
 // Internal modules
-import { SharedModule }            from './shared';
-import { StaticModule }            from './static';
+import { StaticModule }            from './static/static.module';
+import { SharedModule }            from './shared/shared.module';
 import { AppRoutingModule }        from './app-routing.module';
 
 // Services
@@ -50,8 +50,8 @@ import { AppComponent }            from './app.component';
     }),
 
     // Internal modules
-    StaticModule,
     SharedModule,
+    StaticModule,
     AppRoutingModule
   ],
   declarations :

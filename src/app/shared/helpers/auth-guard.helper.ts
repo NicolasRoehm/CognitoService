@@ -1,37 +1,16 @@
 // Angular modules
-import { Injectable }             from '@angular/core';
-import { Router }                 from '@angular/router';
-import { Route }                  from '@angular/router';
-import { CanLoad }                from '@angular/router';
-import { CanActivate }            from '@angular/router';
-import { CanActivateChild }       from '@angular/router';
-import { RouterStateSnapshot }    from '@angular/router';
-import { ActivatedRouteSnapshot } from '@angular/router';
+import { Injectable }    from '@angular/core';
+import { Router }        from '@angular/router';
+import { Route }         from '@angular/router';
+import { CanLoad }       from '@angular/router';
 
 // Helpers
-import { CognitoHelper }          from '../../shared/helpers/cognito.helper';
+import { CognitoHelper } from '../../shared/helpers/cognito.helper';
 
 @Injectable()
-export class AuthGuardHelper implements CanActivate, CanActivateChild, CanLoad
+export class AuthGuardHelper implements CanLoad
 {
-
-  constructor
-  (
-    private router        : Router,
-    private cognitoHelper : CognitoHelper,
-  )
-  {
-  }
-
-  public canActivate(route : ActivatedRouteSnapshot, state : RouterStateSnapshot) : boolean
-  {
-    return this.isAuthenticated();
-  }
-
-  public canActivateChild(route : ActivatedRouteSnapshot, state : RouterStateSnapshot) : boolean
-  {
-    return this.isAuthenticated();
-  }
+  constructor(private router : Router, private cognitoHelper : CognitoHelper) { }
 
   public canLoad(route : Route) : boolean
   {
@@ -48,5 +27,4 @@ export class AuthGuardHelper implements CanActivate, CanActivateChild, CanLoad
 
     return isAuthenticated;
   }
-
 }

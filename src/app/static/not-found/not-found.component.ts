@@ -11,12 +11,5 @@ import { CognitoHelper } from '../../shared/helpers/cognito.helper';
 })
 export class NotFoundComponent
 {
-
-  constructor
-  (
-    public cognitoHelper : CognitoHelper
-  )
-  {
-  }
-
+  constructor(public cognitoHelper : CognitoHelper) { }
 }

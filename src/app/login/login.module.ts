@@ -3,7 +3,7 @@ import { NgModule }           from '@angular/core';
 import { CommonModule }       from '@angular/common';
 
 // External modules
-import { LoginFormModule }    from '@caliatys/login-form';
+// import { LoginFormModule }    from '@caliatys/login-form';
 
 // Internal modules
 import { LoginRoutingModule } from './login-routing.module';
@@ -18,17 +18,9 @@ import { LoginComponent }     from './login.component';
     CommonModule,
     LoginRoutingModule,
     SharedModule,
-    LoginFormModule
+    // LoginFormModule // TODO: Include it here or into SharedModule
   ],
   declarations    :
-  [
-    LoginComponent
-  ],
-  entryComponents :
-  [
-
-  ],
-  exports         :
   [
     LoginComponent
   ]

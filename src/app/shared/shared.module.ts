@@ -36,11 +36,8 @@ import { MatSnackBarModule }        from '@angular/material';
 // import { MatExpansionModule }       from '@angular/material';
 
 // External modules
+import { LoginFormModule }         from '@caliatys/login-form';
 import { TranslateModule }         from '@ngx-translate/core';
-
-// Components
-// Pipes
-// Directives
 
 // NgModule that includes all Material modules that are required to serve the app.
 @NgModule({
@@ -74,10 +71,10 @@ import { TranslateModule }         from '@ngx-translate/core';
     // MatTooltipModule,
   ]
 })
-export class MaterialModule {}
+export class MaterialModule { }
 
 @NgModule({
-  imports:
+  imports         :
   [
     // Angular modules
     CommonModule,
@@ -90,20 +87,11 @@ export class MaterialModule {}
 
     // External modules
     TranslateModule,
-
-    // Internal modules
+    LoginFormModule
   ],
-  declarations:
-  [
-    // Components
-    // Pipes
-    // Directives
-  ],
-  entryComponents:
-  [
-    // Components
-  ],
-  exports:
+  declarations    : [],
+  entryComponents : [],
+  exports         :
   [
     // Angular modules
     CommonModule,
@@ -116,11 +104,7 @@ export class MaterialModule {}
 
     // External modules
     TranslateModule,
-
-    // Components
-    // Pipes
-    // Directives
+    LoginFormModule
   ]
 })
-
 export class SharedModule { }

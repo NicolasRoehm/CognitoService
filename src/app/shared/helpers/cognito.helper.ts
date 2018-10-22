@@ -13,12 +13,12 @@ import { CognitoConst }   from '../consts/cognito.const';
 export class CognitoHelper
 {
   // Services
-  public  cognitoService  : CognitoService = new CognitoService(CognitoConst);
+  public cognitoService : CognitoService = new CognitoService(CognitoConst);
 
   // Consts
-  public  cognitoConst    : any            = CognitoConst;
+  public cognitoConst                    = CognitoConst;
 
   // Enums
-  public  authType                         = AuthType;
-  public  respType                         = RespType;
+  public authType                        = AuthType;
+  public respType                        = RespType;
 }
