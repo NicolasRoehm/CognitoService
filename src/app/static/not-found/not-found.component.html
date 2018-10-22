@@ -1,0 +1,17 @@
+<div class="not-found-container">
+  <div class="not-found text-center">
+    <h1 class="mb-3">{{ 'NOT_FOUND' | translate }}</h1>
+    <!-- NOTE: Authenticated user -->
+    <button mat-raised-button *ngIf="cognitoHelper.cognitoService.isAuthenticated()"
+      color="primary" 
+      [routerLink]="['/home']">
+        {{ 'GO_TO_HOMEPAGE' | translate }}
+    </button>
+    <!-- NOTE: Unknown user -->
+    <button mat-raised-button *ngIf="!cognitoHelper.cognitoService.isAuthenticated()"
+      color="primary" 
+      [routerLink]="['/login']">
+        {{ 'GO_TO_LOGIN_PAGE' | translate }}
+    </button>
+  </div>
+</div>

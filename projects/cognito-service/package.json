@@ -1,7 +1,7 @@
 {
   "name": "@caliatys/cognito-service",
   "description": "Typescript service for AWS Cognito with Angular 6",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "author": "Nicolas Roehm <nicolas.roehm@gmail.com>",
   "license": "MIT",
   "private": false,
@@ -24,9 +24,6 @@
     "amazon-cognito-identity-js": "2.0.6",
     "aws-sdk": "2.247.1",
     "@types/gapi": "0.0.35",
-    "@types/gapi.auth2": "0.0.47",
-    "@ng-idle/core": "^6.0.0-beta.3",
-    "@ng-idle/keepalive": "^6.0.0-beta.3",
-    "angular2-moment": "^1.9.0"
+    "@types/gapi.auth2": "0.0.47"
   }
 }

@@ -1,0 +1,12 @@
+<div class="login-form-container">
+  <div class="login-form">
+    <cal-login-form #loginForm 
+      hidePwdPolicyOnLogin="true" 
+      (login)="login($event)" 
+      (loginSocial)="loginSocial($event)" 
+      (forgotPwd)="forgotPassword($event)" 
+      (sendFirstPwd)="firstPassword($event)" 
+      (sendResetPwd)="resetPassword($event)">
+    </cal-login-form>
+  </div>
+</div>
