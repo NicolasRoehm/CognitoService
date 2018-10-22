@@ -676,6 +676,11 @@ export class CognitoService
   // NOTE: Authentication ----------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
+  public login(provider : string, username ?: string, password ?: string) : Observable<any>
+  {
+    this.authenticateUser(provider, username ? username: null , password ? password: null );
+  }
+  
   public authenticateUser(provider : string, username ?: string, password ?: string) : Observable<any>
   {
     return from(new Promise((resolve, reject) =>
@@ -715,6 +720,11 @@ export class CognitoService
           break;
       }
     }));
+  }
+
+  public logout() : void
+  {
+    this.signOut();
   }
 
   public signOut() : void
