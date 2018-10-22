@@ -1,3 +1,7 @@
+<a href="https://www.npmjs.com/package/@caliatys/cognito-service" target="_blank">
+  <img alt="npm version" src="https://img.shields.io/npm/v/@caliatys/cognito-service.svg?style=flat-square"/>
+</a>
+
 # Manage your users with AWS Cognito
 This Angular 6 Library is a wrapper around the [aws-sdk](https://github.com/aws/aws-sdk-js) and [amazon-cognito-identity-js](https://www.npmjs.com/package/amazon-cognito-identity-js) libraries to easily manage your Cognito User Pool.
 
@@ -87,6 +91,7 @@ ng serve
 
 ### CognitoService
 
+Add `@caliatys/cognito-service` module as dependency to your project.
 ```sh
 npm install @caliatys/cognito-service --save
 ```
@@ -127,37 +132,37 @@ import { CognitoConst }   from '../consts/cognito.const';
 export class CognitoHelper
 {
   // Services
-  public  cognitoService : CognitoService = new CognitoService(CognitoConst);
+  public cognitoService : CognitoService = new CognitoService(CognitoConst);
 
   // Consts
-  public  cognitoConst   : any            = CognitoConst;
+  public cognitoConst                    = CognitoConst;
 
   // Enums
-  public  authType                        = AuthType;
-  public  respType                        = RespType;
+  public authType                        = AuthType;
+  public respType                        = RespType;
 }
+```
+
+Include `CognitoHelper` into the providers of [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
+```typescript
+...
+import { CognitoHelper } from './shared/helpers/cognito.helper';
+
+@NgModule({
+  ...
+  providers :
+  [
+    CognitoHelper
+    ...
+  ],
+  ...
+})
+export class AppModule { }
 ```
 
 Add the API inside the `<head>` of [index.html](https://github.com/Caliatys/CognitoService/blob/master/src/index.html) to enable authentication with Google :
 ```html
 <script src="https://apis.google.com/js/platform.js"></script>
-```
-
-Add `CognitoHelper` the providers of [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
-```typescript
-// ...
-import { CognitoHelper } from './shared/helpers/cognito.helper';
-
-@NgModule({
-  // ...
-  providers :
-  [
-    CognitoHelper
-    //...
-  ],
-  // ...
-})
-export class AppModule { }
 ```
 
 ### External packages
@@ -172,46 +177,141 @@ Install `@caliatys/login-form` :
 npm install @caliatys/login-form --save
 ```
 
-Create a new login component and a new login module :
+Create a new login module with its routing and component :
 ```sh
-ng generate component login
-ng generate module login
+ng generate module login --routing --no-spec
+ng generate component login --no-spec
 ```
 
-Import the `LoginFormModule` into [login.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.module.ts) :
+Include `LoginFormModule` into [login.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.module.ts) or in module where you will use it.
 ```typescript
-// ...
+...
 import { LoginFormModule } from '@caliatys/login-form';
 
 @NgModule({
-  // ...
+  ...
   imports :
   [
     LoginFormModule
-    //...
+    ...
   ],
-  // ...
+  ...
 })
 export class LoginModule { }
 ```
+**or** include `LoginFormModule` into your [shared.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/shared.module.ts). This could be usefull if your project has nested Modules.
+<!-- -->
+[Angular Sharing Modules - Official documentation](https://angular.io/guide/sharing-ngmodules)
 
-Add a new route to the login page into [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
-```typescript
-//...
-{
-  path         : 'login',
-  loadChildren : './login/login.module#LoginModule',
-}
-//...
-```
-
-Let's create an home component with its module :
+You can generate it with :
 ```sh
-ng generate component home
-ng generate module home
+ng generate module shared --no-spec
 ```
 
-To restrict the access to the home page, the routing system requires an [auth-guard.helper.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/helpers/auth-guard.helper.ts) :
+```typescript
+// shared.module.ts
+import { NgModule }        from '@angular/core';
+import { CommonModule }    from '@angular/common';
+import { LoginFormModule } from '@caliatys/login-form';
+...
+
+@NgModule({
+  imports: [
+    CommonModule,
+    LoginFormModule,
+    ...
+  ],
+  exports: [
+    CommonModule,
+    LoginFormModule,
+    ...
+  ],
+  ...
+})
+export class SharedModule {
+}
+```
+```typescript
+// app.module.ts
+...
+import { SharedModule } from './shared/shared.module';
+
+@NgModule({
+  ...
+  imports :
+  [
+    SharedModule
+    ...
+  ],
+  ...
+})
+export class AppModule { }
+```
+
+Create an home module with its routing and component :
+```sh
+ng generate module home --routing --no-spec
+ng generate component home --no-spec
+```
+
+**Bonus** : Create and custom a 404 page.
+```sh
+ng generate module static --routing --no-spec
+ng generate component static/not-found --no-spec
+```
+
+Include `StaticModule` into [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
+```typescript
+...
+import { StaticModule } from './static/static.module';
+
+@NgModule({
+  ...
+  imports :
+  [
+    StaticModule
+    ...
+  ],
+  ...
+})
+export class AppModule { }
+```
+
+Include `CognitoHelper` into [not-found.component.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/static/not-found/not-found.component.ts) :
+```typescript
+// Angular modules
+import { Component }     from '@angular/core';
+
+// Helpers
+import { CognitoHelper } from '../../shared/helpers/cognito.helper';
+
+@Component({
+  selector    : 'app-not-found',
+  templateUrl : './not-found.component.html',
+  styleUrls   : ['./not-found.component.scss']
+})
+export class NotFoundComponent
+{
+  constructor(public cognitoHelper : CognitoHelper) { }
+}
+```
+
+And use it into [not-found.component.html](https://github.com/Caliatys/CognitoService/blob/master/src/app/static/not-found/not-found.component.html) :
+```html
+<h1>404 - Page not found</h1>
+<!-- Authenticated user -->
+<button type="button" [routerLink]="['/home']" 
+  *ngIf="cognitoHelper.cognitoService.isAuthenticated()">
+  Go to home page
+</button>
+<!-- Unknown user -->
+<button type="button" [routerLink]="['/login']" 
+  *ngIf="!cognitoHelper.cognitoService.isAuthenticated()">
+  Go to login page
+</button>
+```
+
+To restrict the access to the home page and redirect to the login page, the routing system requires an [auth-guard.helper.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/helpers/auth-guard.helper.ts) :
 ```typescript
 // Angular modules
 import { Injectable }    from '@angular/core';
@@ -225,7 +325,7 @@ import { CognitoHelper } from '../../shared/helpers/cognito.helper';
 @Injectable()
 export class AuthGuardHelper implements CanLoad
 {
-  constructor(router : Router, cognitoHelper : CognitoHelper) { }
+  constructor(private router : Router, private cognitoHelper : CognitoHelper) { }
 
   public canLoad(route : Route) : boolean
   {
@@ -245,15 +345,107 @@ export class AuthGuardHelper implements CanLoad
 }
 ```
 
-Now we can add a new protected route to the home page into [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
+If you don't have [app-routing.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app-routing.module.ts), here's how to create and import it :
+```sh
+ng generate module app-routing --flat --module=app --no-spec
+```
+> --flat puts the file in src/app instead of its own folder.
+>
+> --module=app tells the CLI to register it in the imports array of the AppModule.
+<!-- -->
+[Angular Routing - Official documentation](https://angular.io/tutorial/toh-pt5)
+
+Include `AppRoutingModule` into [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
 ```typescript
-import { AuthGuardHelper } from './shared/helpers/auth-guard.helper';
-//...
-{
-  path         : 'home',
-  loadChildren : './home/home.module#HomeModule',
-  canLoad      : [ AuthGuardHelper ]
-},
+...
+import { AppRoutingModule } from './app-routing.module';
+
+@NgModule({
+  ...
+  imports :
+  [
+    AppRoutingModule
+    ...
+  ],
+  ...
+})
+export class AppModule { }
+```
+
+Now let's add and protect the routes into [app-routing.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app-routing.module.ts) :
+```typescript
+// Angular modules
+import { NgModule }          from '@angular/core';
+import { RouterModule }      from '@angular/router';
+import { Routes }            from '@angular/router';
+
+// Components
+import { NotFoundComponent } from './static/not-found/not-found.component';
+
+// Helpers
+import { AuthGuardHelper }   from './shared/helpers/auth-guard.helper';
+
+const routes : Routes = [
+  {
+    path         : 'login',
+    loadChildren : './login/login.module#LoginModule',
+  },
+  {
+    path         : 'home',
+    loadChildren : './home/home.module#HomeModule',
+    canLoad      : [ AuthGuardHelper ]
+  },
+  { path : '',   redirectTo : '/login', pathMatch : 'full' },
+  { path : '**', component  : NotFoundComponent }
+];
+
+@NgModule({
+  imports   : [ RouterModule.forRoot(routes) ],
+  exports   : [ RouterModule ],
+  providers : [ AuthGuardHelper ]
+})
+export class AppRoutingModule { }
+```
+
+Here is an overview of the file structure :
+```
+app/                                 
+│                                    
+├── home/                            
+│   ├── home-routing.module.ts       
+│   ├── home.component.html          
+│   ├── home.component.scss          
+│   ├── home.component.ts            
+│   └── home.module.ts               
+│                                    
+├── login/                           
+│   ├── login-routing.module.ts      
+│   ├── login.component.html         
+│   ├── login.component.scss         
+│   ├── login.component.ts           
+│   └── login.module.ts              
+│                                    
+├── shared/                          
+│   ├── consts/                      
+│   │   └── cognito.const.ts         
+│   ├── helpers/                     
+│   │   ├── auth-guard.helper.ts     
+│   │   └── cognito.helper.ts        
+│   └── shared.module.ts             
+│                                    
+├── static/                          
+│   ├── not-found/                   
+│   │   ├── not-found.component.html 
+│   │   ├── not-found.component.scss 
+│   │   └── not-found.component.ts   
+│   ├── static-routing.module.ts     
+│   └── static.module.ts             
+│                                    
+├── app-routing.module.ts            
+├── app.component.html               
+├── app.component.scss               
+├── app.component.ts                 
+└── app.module.ts                    
 ```
 </details>
 
@@ -268,7 +460,7 @@ npm install @ng-idle/core @ng-idle/keepalive angular2-moment --save
 
 Add `NgIdleKeepaliveModule` and `MomentModule` into the imports of [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
 ```typescript
-//...
+...
 import { NgIdleKeepaliveModule } from '@ng-idle/keepalive'; // this includes the core NgIdleModule but includes keepalive providers for easy wireup
 import { MomentModule }          from 'angular2-moment';    // optional, provides moment-style pipes for date formatting
 
@@ -276,9 +468,9 @@ import { MomentModule }          from 'angular2-moment';    // optional, provide
   imports: [
     NgIdleKeepaliveModule.forRoot(),
     MomentModule,
-    //...
+    ...
   ],
-  // ...
+  ...
 })
 export class AppModule { }
 ```
@@ -289,12 +481,12 @@ export class AppModule { }
 ### CognitoService
 To start using the service, import the `CognitoHelper` into a component (`LoginComponent` for example) :
 ```typescript
-//...
+...
 import { CognitoHelper } from './shared/helpers/cognito.helper';
-//...
+...
 export class LoginComponent
 {
-  constructor(cognitoHelper : CognitoHelper)
+  constructor(public cognitoHelper : CognitoHelper)
   {
     // this.cognitoHelper.cognitoService...
   }
@@ -308,7 +500,7 @@ export class LoginComponent
 <details>
   <summary>Show / Hide : Usage</summary>
 
-Add the `cal-login-form` component into [login.component.html](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.component.html) :
+Once the `LoginFormModule` is imported, you can start using the `cal-login-form` component into [login.component.html](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.component.html) :
 ```html
 <cal-login-form #loginForm 
   (initialized)="initialized()" 
