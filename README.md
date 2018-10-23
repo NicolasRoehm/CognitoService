@@ -36,11 +36,11 @@ It also implements [@ng-idle](https://github.com/HackedByChinese/ng2-idle) and [
     + [Signup](#signup)
     + [Confirm registration](#confirm-registration)
     + [Resend confirmation code](#resend-confirmation-code)
-    + [Login](#login)
+    + [SignIn](#signin)
       - [Google](#google)
       - [Cognito](#cognito)
     + [Refresh session](#refresh-session)
-    + [Logout](#logout)
+    + [SignOut](#signout)
   * [MFA](#mfa)
     + [Send MFA code](#send-mfa-code)
     + [Get MFA status](#get-mfa-status)
@@ -489,7 +489,6 @@ export class LoginComponent
   constructor(public cognitoHelper : CognitoHelper)
   {
     // this.cognitoHelper.cognitoService...
-
   }
 }
 ```
@@ -568,7 +567,7 @@ export class LoginComponent
     if(social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
-    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
     {
       this.onSuccessLogin();
     },
@@ -587,9 +586,9 @@ export class LoginComponent
     username = $event.username;
     password = $event.password;
 
-    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
     {
-      // Success login
+      // Successful signIn
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
         this.onSuccessLogin();
 
@@ -608,7 +607,7 @@ export class LoginComponent
     err =>
     {
       // ON_FAILURE / MFA_SETUP_ON_FAILURE
-      console.error('LoginComponent : login -> authenticateUser', err);
+      console.error('LoginComponent : login -> signIn', err);
       this.snackBar.open(err.data.message, 'X');
     });
   }
@@ -725,8 +724,8 @@ export class AppComponent implements OnInit, OnDestroy
   public  lastPing ?: Date    = null;
 
   // Subscriptions
-  private loginSub  : Subscription;
-  private logoutSub : Subscription;
+  private signInSub  : Subscription;
+  private signOutSub : Subscription;
 
   constructor
   (
@@ -744,14 +743,14 @@ export class AppComponent implements OnInit, OnDestroy
 
     this.setIdle();
 
-    this.loginSub  = this.loginSubscription();
-    this.logoutSub = this.logoutSubscription();
+    this.signInSub  = this.signInSubscription();
+    this.signOutSub = this.signOutSubscription();
   }
 
   public ngOnDestroy() : void
   {
-    this.loginSub.unsubscribe();
-    this.logoutSub.unsubscribe();
+    this.signInSub.unsubscribe();
+    this.signOutSub.unsubscribe();
   }
 
   // Session management
@@ -799,25 +798,25 @@ export class AppComponent implements OnInit, OnDestroy
 
   // Subscription
 
-  private loginSubscription() : Subscription
+  private signInSubscription() : Subscription
   {
-    let loginSub : Subscription = null;
-    loginSub = this.cognitoHelper.cognitoService.onLogin.subscribe(() =>
+    let signInSub : Subscription = null;
+    signInSub = this.cognitoHelper.cognitoService.onSignIn.subscribe(() =>
     {
       this.isAuthenticated = true;
     });
-    return loginSub;
+    return signInSub;
   }
 
-  private logoutSubscription() : Subscription
+  private signOutSubscription() : Subscription
   {
-    let logoutSub : Subscription = null;
-    logoutSub = this.cognitoHelper.cognitoService.onLogout.subscribe(() =>
+    let signOutSub : Subscription = null;
+    signOutSub = this.cognitoHelper.cognitoService.onSignOut.subscribe(() =>
     {
-      this.isAuthenticated = false;
+      this.isAuthenticated = false;      
       this.router.navigate([ '/login' ]);
     });
-    return logoutSub;
+    return signOutSub;
   }
 
 }
@@ -834,12 +833,12 @@ If you want to display the idle state, you can add it to [app.component.html](ht
 
 ## Variables
 
-Events that you can subscribe to deal with login and logout (signOut) events
+Events that you can subscribe to deal with `signIn` and `signOut` events
 
 ```typescript
 // Events that you can subscribe to
-public onLogin  : EventEmitter<null>;
-public onLogout : EventEmitter<null>;
+public onSignIn  : EventEmitter<null>;
+public onSignOut : EventEmitter<null>;
 ```
 
 ## Methods
@@ -872,12 +871,12 @@ this.cognitoHelper.cognitoService.confirmRegistration().subscribe(res => {
 this.cognitoHelper.cognitoService.resendConfirmationCode();
 ```
 
-#### Login
-Login an existing user with Google or Cognito.
+#### SignIn
+SignIn an existing user with Google or Cognito.
 
 ##### Google
 ```typescript
-this.cognitoHelper.cognitoService.authenticateUser(AuthType.GOOGLE).subscribe(res =>
+this.cognitoHelper.cognitoService.signIn(AuthType.GOOGLE).subscribe(res =>
   // Success
 }, err => {
   // Error
@@ -886,9 +885,9 @@ this.cognitoHelper.cognitoService.authenticateUser(AuthType.GOOGLE).subscribe(re
 
 ##### Cognito
 ```typescript
-this.cognitoHelper.cognitoService.authenticateUser(AuthType.COGNITO, 'username', 'password').subscribe(res => {
+this.cognitoHelper.cognitoService.signIn(AuthType.COGNITO, 'username', 'password').subscribe(res => {
 
-  // Success login
+  // Successful signIn
   if(res.type === RespType.ON_SUCCESS)
     let session : AWSCognito.CognitoUserSession = res.data;
 
@@ -917,7 +916,7 @@ this.cognitoHelper.cognitoService.authenticateUser(AuthType.COGNITO, 'username',
 
 #### Refresh session
 Generate new refreshToken, idToken and accessToken with a new expiry date.
-If successful, you retrieve 3 auth tokens and the associated expiration dates (same as login).
+If successful, you retrieve 3 auth tokens and the associated expiration dates (same as signIn).
 ```typescript
 this.cognitoHelper.cognitoService.refreshCognitoSession().subscribe(res => {
 
@@ -926,7 +925,7 @@ this.cognitoHelper.cognitoService.refreshCognitoSession().subscribe(res => {
 }, err => { });
 ```
 
-#### Logout
+#### SignOut
 ```typescript
 this.cognitoHelper.cognitoService.signOut();
 ```
@@ -934,7 +933,7 @@ this.cognitoHelper.cognitoService.signOut();
 ### MFA
 
 #### Send MFA code
-Complete the `MFA_REQUIRED` sent by the `login` or by the `newPasswordRequired` method using the mfaCode received by SMS to finish the login flow.
+Complete the `MFA_REQUIRED` sent by the `signIn` or by the `newPasswordRequired` method using the mfaCode received by SMS to finish the signIn flow.
 ```typescript
 this.cognitoHelper.cognitoService.sendMFACode('mfaCode', 'SOFTWARE_TOKEN_MFA or SMS_MFA').subscribe(res => {
 
@@ -966,7 +965,7 @@ this.cognitoHelper.cognitoService.setMfa(enableMfa).subscribe(res => {
 ### Password
 
 #### New password required
-Complete the `NEW_PASSWORD_REQUIRED` response sent by the `login` method to finish the first connection flow.
+Complete the `NEW_PASSWORD_REQUIRED` response sent by the `signIn` method to finish the first connection flow.
 ```typescript
 this.cognitoHelper.cognitoService.newPasswordRequired('newPassword').subscribe(res => {
 
