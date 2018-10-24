@@ -760,7 +760,7 @@ export class CognitoService
 
     return from(new Promise((resolve, reject) =>
     {
-      cognitoUser.signIn(authenticationDetails,
+      cognitoUser.authenticateUser(authenticationDetails,
       {
         newPasswordRequired : (userAttributes : any, requiredAttributes : any) =>
         {
@@ -778,7 +778,7 @@ export class CognitoService
         },
         onFailure : (err) =>
         {
-          console.error('CognitoService : signInPool -> signIn', err);
+          console.error('CognitoService : signInPool -> authenticateUser', err);
           return reject({ type : RespType.ON_FAILURE, data : err });
         },
         mfaSetup : (challengeName : any, challengeParameters : any) =>
