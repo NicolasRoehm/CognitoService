@@ -502,17 +502,17 @@ export class LoginComponent
 
 Once the `LoginFormModule` is imported, you can start using the `cal-login-form` component into [login.component.html](https://github.com/Caliatys/CognitoService/blob/master/src/app/login/login.component.html) :
 ```html
-<cal-login-form #loginForm 
-  (initialized)="initialized()" 
-  (signUp)="signUp()" 
-  (login)="login($event)" 
-  (loginSocial)="loginSocial($event)" 
-  (forgotPwd)="forgotPassword($event)" 
-  (sendFirstPwd)="firstPassword($event)" 
-  (sendResetPwd)="resetPassword($event)" 
-  (saveMfaKey)="saveMfaKey($event)" 
-  (sendMfaCode)="sendMfaCode($event)" 
-  (stepUsr)="stepUsr($event)" 
+<cal-login-form #loginForm
+  (initialized)="initialized()"
+  (signUp)="signUp()"
+  (login)="login($event)"
+  (loginSocial)="loginSocial($event)"
+  (forgotPwd)="forgotPassword($event)"
+  (sendFirstPwd)="firstPassword($event)"
+  (sendResetPwd)="resetPassword($event)"
+  (saveMfaKey)="saveMfaKey($event)"
+  (sendMfaCode)="sendMfaCode($event)"
+  (stepUsr)="stepUsr($event)"
   (stepPwd)="stepPwd($event)">
 </cal-login-form>
 ```
@@ -567,7 +567,7 @@ export class LoginComponent
     if(social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
-    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
     {
       this.onSuccessLogin();
     },
@@ -586,7 +586,7 @@ export class LoginComponent
     username = $event.username;
     password = $event.password;
 
-    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
     {
       // Success login
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
@@ -607,7 +607,7 @@ export class LoginComponent
     err =>
     {
       // ON_FAILURE / MFA_SETUP_ON_FAILURE
-      console.error('LoginComponent : login -> authenticateUser', err);
+      console.error('LoginComponent : login -> signIn', err);
       this.snackBar.open(err.data.message, 'X');
     });
   }
@@ -724,8 +724,8 @@ export class AppComponent implements OnInit, OnDestroy
   public  lastPing ?: Date    = null;
 
   // Subscriptions
-  private loginSub  : Subscription;
-  private logoutSub : Subscription;
+  private signInSub  : Subscription;
+  private signOutSub : Subscription;
 
   constructor
   (
@@ -743,14 +743,14 @@ export class AppComponent implements OnInit, OnDestroy
 
     this.setIdle();
 
-    this.loginSub  = this.loginSubscription();
-    this.logoutSub = this.logoutSubscription();
+    this.signInSub  = this.signInSubscription();
+    this.signOutSub = this.signOutSubscription();
   }
 
   public ngOnDestroy() : void
   {
-    this.loginSub.unsubscribe();
-    this.logoutSub.unsubscribe();
+    this.signInSub.unsubscribe();
+    this.signOutSub.unsubscribe();
   }
 
   // Session management
@@ -798,25 +798,25 @@ export class AppComponent implements OnInit, OnDestroy
 
   // Subscription
 
-  private loginSubscription() : Subscription
+  private signInSubscription() : Subscription
   {
-    let loginSub : Subscription = null;
-    loginSub = this.cognitoHelper.cognitoService.onLogin.subscribe(() =>
+    let signInSub : Subscription = null;
+    signInSub = this.cognitoHelper.cognitoService.onSignIn.subscribe(() =>
     {
       this.isAuthenticated = true;
     });
-    return loginSub;
+    return signInSub;
   }
 
-  private logoutSubscription() : Subscription
+  private signOutSubscription() : Subscription
   {
-    let logoutSub : Subscription = null;
-    logoutSub = this.cognitoHelper.cognitoService.onLogout.subscribe(() =>
+    let signOutSub : Subscription = null;
+    signOutSub = this.cognitoHelper.cognitoService.onSignOut.subscribe(() =>
     {
       this.isAuthenticated = false;
       this.router.navigate([ '/login' ]);
     });
-    return logoutSub;
+    return signOutSub;
   }
 
 }
@@ -835,8 +835,8 @@ If you want to display the idle state, you can add it to [app.component.html](ht
 
 ```typescript
 // Events that you can subscribe to
-public onLogin  : EventEmitter<null>;
-public onLogout : EventEmitter<null>;
+public onSignIn  : EventEmitter<null>;
+public onSignOut : EventEmitter<null>;
 ```
 
 ## Methods
@@ -874,7 +874,7 @@ Login an existing user with Google or Cognito.
 
 ##### Google
 ```typescript
-this.cognitoService.authenticateUser(AuthType.GOOGLE).subscribe(res =>
+this.cognitoService.signIn(AuthType.GOOGLE).subscribe(res =>
   // Success
 }, err => {
   // Error
@@ -883,7 +883,7 @@ this.cognitoService.authenticateUser(AuthType.GOOGLE).subscribe(res =>
 
 ##### Cognito
 ```typescript
-this.cognitoService.authenticateUser(AuthType.COGNITO, 'username', 'password').subscribe(res => {
+this.cognitoService.signIn(AuthType.COGNITO, 'username', 'password').subscribe(res => {
 
   // Success login
   if(res.type === RespType.ON_SUCCESS)

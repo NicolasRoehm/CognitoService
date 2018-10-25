@@ -27,8 +27,8 @@ export enum GoogleAction
 })
 export class CognitoService
 {
-  public  onLogin          : EventEmitter<null>;
-  public  onLogout         : EventEmitter<null>;
+  public  onSignIn          : EventEmitter<null>;
+  public  onSignOut         : EventEmitter<null>;
 
   // private MFA              : boolean = false;
 
@@ -58,8 +58,8 @@ export class CognitoService
     private http ?: HttpClient
   )
   {
-    this.onLogin             = new EventEmitter();
-    this.onLogout            = new EventEmitter();
+    this.onSignIn             = new EventEmitter();
+    this.onSignOut            = new EventEmitter();
 
     this.storagePrefix       = cognitoConst.storagePrefix + '_CognitoService_';
     this.sessionTime         = cognitoConst.sessionTime  || 3500000;
@@ -676,7 +676,7 @@ export class CognitoService
   // NOTE: Authentication ----------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  public authenticateUser(provider : string, username ?: string, password ?: string) : Observable<any>
+  public signIn(provider : string, username ?: string, password ?: string) : Observable<any>
   {
     return from(new Promise((resolve, reject) =>
     {
@@ -735,7 +735,7 @@ export class CognitoService
         break;
     }
 
-    this.onLogout.emit();
+    this.onSignOut.emit();
     this.clearStorage();
   }
 
@@ -773,12 +773,12 @@ export class CognitoService
           this.updateTokens(session);
           this.setProvider(AuthType.COGNITO);
 
-          this.onLogin.emit();
+          this.onSignIn.emit();
           return resolve({ type : RespType.ON_SUCCESS, data : session });
         },
         onFailure : (err) =>
         {
-          console.error('CognitoService : authenticateUserPool -> authenticateUser', err);
+          console.error('CognitoService : signInPool -> authenticateUser', err);
           return reject({ type : RespType.ON_FAILURE, data : err });
         },
         mfaSetup : (challengeName : any, challengeParameters : any) =>
@@ -932,7 +932,7 @@ export class CognitoService
         this.setExpiresAt(response.expires_at);
         this.setProvider(AuthType.GOOGLE);
 
-        this.onLogin.emit();
+        this.onSignIn.emit();
         return resolve({ type : RespType.ON_SUCCESS, data : profile });
       },
       (onRejected : any) =>

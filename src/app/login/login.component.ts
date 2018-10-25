@@ -47,13 +47,13 @@ export class LoginComponent
     if(social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
-    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
     {
       this.onSuccessLogin();
     },
     err =>
     {
-      console.error('LoginComponent : loginSocial -> authenticateUser', err);
+      console.error('LoginComponent : loginSocial -> signIn', err);
     });
   }
 
@@ -66,7 +66,7 @@ export class LoginComponent
     username = $event.username;
     password = $event.password;
 
-    this.cognitoHelper.cognitoService.authenticateUser(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
     {
       // Success login
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
@@ -87,7 +87,7 @@ export class LoginComponent
     err =>
     {
       // ON_FAILURE / MFA_SETUP_ON_FAILURE
-      console.error('LoginComponent : login -> authenticateUser', err);
+      console.error('LoginComponent : login -> signIn', err);
       this.snackBar.open(err.data.message, 'X');
     });
   }

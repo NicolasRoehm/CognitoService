@@ -29,8 +29,8 @@ export class AppComponent implements OnInit, OnDestroy
   public  lastPing ?: Date    = null;
 
   // Subscriptions
-  private loginSub        : Subscription;
-  private logoutSub       : Subscription;
+  private signInSub        : Subscription;
+  private signOutSub       : Subscription;
 
   constructor
   (
@@ -53,14 +53,14 @@ export class AppComponent implements OnInit, OnDestroy
 
     this.setIdle();
 
-    this.loginSub  = this.loginSubscription();
-    this.logoutSub = this.logoutSubscription();
+    this.signInSub  = this.signInSubscription();
+    this.signOutSub = this.signOutSubscription();
   }
 
   public ngOnDestroy() : void
   {
-    this.loginSub.unsubscribe();
-    this.logoutSub.unsubscribe();
+    this.signInSub.unsubscribe();
+    this.signOutSub.unsubscribe();
   }
 
   // -------------------------------------------------------------------------------------------
@@ -112,25 +112,25 @@ export class AppComponent implements OnInit, OnDestroy
   // ---- NOTE: Subscription -------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  private loginSubscription() : Subscription
+  private signInSubscription() : Subscription
   {
-    let loginSub : Subscription = null;
-    loginSub = this.cognitoHelper.cognitoService.onLogin.subscribe(() =>
+    let signInSub : Subscription = null;
+    signInSub = this.cognitoHelper.cognitoService.onSignIn.subscribe(() =>
     {
       this.isAuthenticated = true;
     });
-    return loginSub;
+    return signInSub;
   }
 
-  private logoutSubscription() : Subscription
+  private signOutSubscription() : Subscription
   {
-    let logoutSub : Subscription = null;
-    logoutSub = this.cognitoHelper.cognitoService.onLogout.subscribe(() =>
+    let signOutSub : Subscription = null;
+    signOutSub = this.cognitoHelper.cognitoService.onSignOut.subscribe(() =>
     {
       this.isAuthenticated = false;
       this.router.navigate([ '/login' ]);
     });
-    return logoutSub;
+    return signOutSub;
   }
 
 }
