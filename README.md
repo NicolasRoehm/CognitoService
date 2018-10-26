@@ -100,7 +100,7 @@ Copy/paste [src/app/shared/consts/cognito.const.ts](https://github.com/Caliatys/
 ```typescript
 export const CognitoConst = {
   storagePrefix    : 'AngularApp',
-  sessionTime      : 10, // In seconds
+  sessionTime      : 10000, // In millisecond
   googleId         : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
   googleScope      : '',
   poolData         : {
@@ -435,8 +435,8 @@ app/
 │                                    
 ├── static/                          
 │   ├── not-found/                   
-│   │   ├── not-found.component.html
-│   │   ├── not-found.component.scss
+│   │   ├── not-found.component.html 
+│   │   ├── not-found.component.scss 
 │   │   └── not-found.component.ts   
 │   ├── static-routing.module.ts     
 │   └── static.module.ts             
@@ -813,7 +813,7 @@ export class AppComponent implements OnInit, OnDestroy
     let signOutSub : Subscription = null;
     signOutSub = this.cognitoHelper.cognitoService.onSignOut.subscribe(() =>
     {
-      this.isAuthenticated = false;      
+      this.isAuthenticated = false;
       this.router.navigate([ '/login' ]);
     });
     return signOutSub;
@@ -1090,12 +1090,20 @@ this.cognitoHelper.cognitoService.setAdmin();
   "@angular/http"              : "^6.0.3",
   "rxjs"                       : "^6.0.0",
   "rxjs-compat"                : "^6.0.0",
-  "amazon-cognito-identity-js" : "2.0.6",
-  "aws-sdk"                    : "2.247.1",
+  "amazon-cognito-identity-js" : "^2.0.6",
+  "aws-sdk"                    : "^2.247.1",
   "@types/gapi"                : "0.0.35",
   "@types/gapi.auth2"          : "0.0.47"
+},
+"devDependencies"              : {
+  "@types/node"                : "10.12.0"
 }
 ```
+
+If it's a new Angular 6 application :
+
+- Add `"types": ["node"]` to the [tsconfig.app.json](https://github.com/Caliatys/CognitoService/blob/master/src/tsconfig.app.json) file that the angular-cli creates in the `src` directory.
+- Add `(window as any).global = window;` to the [polyfills.ts](https://github.com/Caliatys/CognitoService/blob/master/src/polyfills.ts) file, as mentioned here : [angular/angular-cli#9827 (comment)](https://github.com/angular/angular-cli/issues/9827#issuecomment-386154063)
 
 ## Roadmap
 

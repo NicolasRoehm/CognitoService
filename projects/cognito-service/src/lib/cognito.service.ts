@@ -62,7 +62,7 @@ export class CognitoService
     this.onSignOut            = new EventEmitter();
 
     this.storagePrefix       = cognitoConst.storagePrefix + '_CognitoService_';
-    this.sessionTime         = cognitoConst.sessionTime  || 3500000;
+    this.sessionTime         = cognitoConst.sessionTime || 3500000; // In millisecond
 
     this.googleId            = cognitoConst.googleId;
     this.googleScope         = cognitoConst.googleScope;
@@ -100,7 +100,7 @@ export class CognitoService
     if(!expiresAt)
       return;
 
-    if(nextTime < (expiresAt))
+    if(nextTime < expiresAt.getTime())
     {
       this.setExpiresAt(nextTime);
       return;
@@ -121,28 +121,33 @@ export class CognitoService
   {
     let remaining : number = 0;
     let now       : number = 0;
-    let max       : number = 0;
+    let max       : Date   = null;
     now = Date.now();
     max = this.getExpiresAt();
 
     if(!max)
       return null;
-    remaining = max - now;
+    remaining = max.getTime() - now;
     if(remaining <= 0)
       return null;
     return remaining;
   }
 
-  public getExpiresAt() : number
+  public getExpiresAt() : Date
   {
     let storageKey   : string = null;
     let expiresAtStr : string = null;
     let expiresAtNum : number = null;
+    let expiresAtDat : Date   = null;
     storageKey   = this.storagePrefix + 'ExpiresAt';
     expiresAtStr = localStorage.getItem(storageKey);
     if(expiresAtStr)
+    {
       expiresAtNum = Number(expiresAtStr);
-    return expiresAtNum;
+      if(expiresAtNum)
+        expiresAtDat = new Date(expiresAtNum);
+    }
+    return expiresAtDat;
   }
 
   // NOTE: Username ----------------------------------------------------------------------------
@@ -658,11 +663,11 @@ export class CognitoService
     }));
   }
 
-  public resetExpiredAccount(usernameKey : string, username : string) : void
+  public resetExpiredAccount(usernameKey : string, username : string) : Observable<any>
   {
     let attributes : AWS.CognitoIdentityServiceProvider.AttributeType[] = [];
     attributes.push({ Name : usernameKey, Value : username });
-    this.adminUpdateUserAttributes(username, attributes);
+    return this.adminUpdateUserAttributes(username, attributes);
   }
 
   public setAdmin() : void
@@ -1051,7 +1056,7 @@ export class CognitoService
       accessToken          : session.getAccessToken().getJwtToken(),
       accessTokenExpiresAt : session.getAccessToken().getExpiration(),
       idToken              : session.getIdToken().getJwtToken(),
-      idTokenExpiresAt     : session.getIdToken().getExpiration() * 1000,
+      idTokenExpiresAt     : session.getIdToken().getExpiration() * 1000, // Seconds to milliseconds
       refreshToken         : session.getRefreshToken().getToken()
     };
     tokensStr = JSON.stringify(tokensObj);

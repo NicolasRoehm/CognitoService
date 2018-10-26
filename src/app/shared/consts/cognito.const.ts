@@ -1,6 +1,6 @@
 export const CognitoConst = {
   storagePrefix    : 'AngularApp',
-  sessionTime      : 10, // In seconds
+  sessionTime      : 10000, // In millisecond
   googleId         : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
   googleScope      : '',
   poolData         : {

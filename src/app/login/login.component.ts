@@ -68,7 +68,7 @@ export class LoginComponent
 
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
     {
-      // Success login
+      // Successful signIn
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
         this.onSuccessLogin();
 
@@ -177,10 +177,10 @@ export class LoginComponent
   private onSuccessLogin() : void
   {
     console.log('LoginComponent : onSuccessLogin');
-    console.log('%c' + 'Username : '  + this.cognitoHelper.cognitoService.getUsername()            , 'color: white; background-color: #0764D3;');
-    console.log('%c' + 'Provider : '  + this.cognitoHelper.cognitoService.getProvider()            , 'color: white; background-color: green;');
-    console.log('%c' + 'IdToken : '   + this.cognitoHelper.cognitoService.getIdToken()             , 'color: white; background-color: black;');
-    console.log('%c' + 'ExpiresAt : ' + new Date(this.cognitoHelper.cognitoService.getExpiresAt()) , 'color: black; background-color: white;');
+    console.log('%c' + 'Username : '  + this.cognitoHelper.cognitoService.getUsername()  , 'color: white; background-color: #0764D3;');
+    console.log('%c' + 'Provider : '  + this.cognitoHelper.cognitoService.getProvider()  , 'color: white; background-color: green;');
+    console.log('%c' + 'IdToken : '   + this.cognitoHelper.cognitoService.getIdToken()   , 'color: white; background-color: black;');
+    console.log('%c' + 'ExpiresAt : ' + this.cognitoHelper.cognitoService.getExpiresAt() , 'color: black; background-color: white;');
     this.router.navigate(['/home']);
   }
 
