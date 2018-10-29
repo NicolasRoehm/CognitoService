@@ -3,7 +3,7 @@
 </a>
 
 # Manage your users with AWS Cognito
-This Angular 6 Library is a wrapper around the [aws-sdk](https://github.com/aws/aws-sdk-js) and [amazon-cognito-identity-js](https://www.npmjs.com/package/amazon-cognito-identity-js) libraries to easily manage your Cognito User Pool.
+This Angular Library, which currently supports Angular 6.x and 7.x, is a wrapper around the [aws-sdk](https://github.com/aws/aws-sdk-js) and [amazon-cognito-identity-js](https://www.npmjs.com/package/amazon-cognito-identity-js) libraries to easily manage your Cognito User Pool.
 
 ## Note
 The sample application uses our authentication component : [@caliatys/login-form](https://github.com/Caliatys/LoginComponent/).
@@ -552,7 +552,7 @@ export class LoginComponent
   )
   {
     if(this.cognitoHelper.cognitoService.isAuthenticated())
-      this.onSuccessLogin();
+      this.successfulConnection();
   }
 
   // Actions :
@@ -569,7 +569,7 @@ export class LoginComponent
 
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
     {
-      this.onSuccessLogin();
+      this.successfulConnection();
     },
     err =>
     {
@@ -590,7 +590,7 @@ export class LoginComponent
     {
       // Successful signIn
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
-        this.onSuccessLogin();
+        this.successfulConnection();
 
       // First connection
       if(res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
@@ -680,7 +680,7 @@ export class LoginComponent
     });
   }
 
-  private onSuccessLogin() : void
+  private successfulConnection() : void
   {
     this.router.navigate(['/home']);
   }
@@ -845,8 +845,8 @@ public onSignOut : EventEmitter<null>;
 
 ### Registration
 
-#### Signup
-Signup a new user :
+#### SignUp
+Register a new user :
 ```typescript
 this.cognitoHelper.cognitoService.signUp('username', 'password').subscribe(res => {
 
@@ -872,8 +872,7 @@ this.cognitoHelper.cognitoService.resendConfirmationCode();
 ```
 
 #### SignIn
-SignIn an existing user with Google or Cognito.
-
+Connect an existing user with Google or Cognito.
 ##### Google
 ```typescript
 this.cognitoHelper.cognitoService.signIn(AuthType.GOOGLE).subscribe(res =>
@@ -887,7 +886,7 @@ this.cognitoHelper.cognitoService.signIn(AuthType.GOOGLE).subscribe(res =>
 ```typescript
 this.cognitoHelper.cognitoService.signIn(AuthType.COGNITO, 'username', 'password').subscribe(res => {
 
-  // Successful signIn
+  // Successful connection
   if(res.type === RespType.ON_SUCCESS)
     let session : AWSCognito.CognitoUserSession = res.data;
 
@@ -915,8 +914,8 @@ this.cognitoHelper.cognitoService.signIn(AuthType.COGNITO, 'username', 'password
 ```
 
 #### Refresh session
-Generate new refreshToken, idToken and accessToken with a new expiry date.
-If successful, you retrieve 3 auth tokens and the associated expiration dates (same as signIn).
+Generate new `refreshToken`, `idToken` and `accessToken` with a new expiry date.
+If successful, you retrieve 3 auth tokens and the associated expiration dates (same as `signIn`).
 ```typescript
 this.cognitoHelper.cognitoService.refreshCognitoSession().subscribe(res => {
 
@@ -1038,11 +1037,21 @@ let idToken : string = this.cognitoHelper.cognitoService.getIdToken();
 let tokens : any = this.cognitoHelper.cognitoService.getTokens();
 // tokens = {
 //   accessToken          : string,
-//   accessTokenExpiresAt : number,
+//   accessTokenExpiresAt : number, (milliseconds)
 //   idToken              : string,
-//   idTokenExpiresAt     : number,
+//   idTokenExpiresAt     : number, (milliseconds)
 //   refreshToken         : string
 // }
+```
+
+### Get token expiration date
+```typescript
+let expiresAt : Date = this.cognitoHelper.cognitoService.getExpiresAt();
+```
+
+### Get the remaining time
+```typescript
+let remaining : Number = this.cognitoHelper.cognitoService.getRemaining(); // milliseconds
 ```
 
 ## Admin
@@ -1085,9 +1094,8 @@ this.cognitoHelper.cognitoService.setAdmin();
 **Important** : This project uses the following dependencies :
 ```json
 "peerDependencies"             : {
-  "@angular/common"            : "^6.0.0-rc.0 || ^6.0.0",
-  "@angular/core"              : "^6.0.0-rc.0 || ^6.0.0",
-  "@angular/http"              : "^6.0.3",
+  "@angular/common"            : "^6.0.0 || ^7.0.0",
+  "@angular/core"              : "^6.0.0 || ^7.0.0",
   "rxjs"                       : "^6.0.0",
   "rxjs-compat"                : "^6.0.0",
   "amazon-cognito-identity-js" : "^2.0.6",
@@ -1100,7 +1108,7 @@ this.cognitoHelper.cognitoService.setAdmin();
 }
 ```
 
-If it's a new Angular 6 application :
+If it's an empty Angular application :
 
 - Add `"types": ["node"]` to the [tsconfig.app.json](https://github.com/Caliatys/CognitoService/blob/master/src/tsconfig.app.json) file that the angular-cli creates in the `src` directory.
 - Add `(window as any).global = window;` to the [polyfills.ts](https://github.com/Caliatys/CognitoService/blob/master/src/polyfills.ts) file, as mentioned here : [angular/angular-cli#9827 (comment)](https://github.com/angular/angular-cli/issues/9827#issuecomment-386154063)
@@ -1119,4 +1127,4 @@ Contributions are welcome, please open an issue and preferably submit a pull req
 
 ## Development
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 6.0.5.
+CognitoService is built with [Angular CLI](https://github.com/angular/angular-cli).

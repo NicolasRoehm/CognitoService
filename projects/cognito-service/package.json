@@ -1,7 +1,7 @@
 {
   "name"        : "@caliatys/cognito-service",
-  "description" : "Typescript service for AWS Cognito with Angular 6",
-  "version"     : "1.2.5",
+  "description" : "Typescript service for AWS Cognito with Angular",
+  "version"     : "1.2.6",
   "author"      : "Nicolas Roehm <nicolas.roehm@gmail.com>",
   "license"     : "MIT",
   "private"     : false,
@@ -16,9 +16,8 @@
     "javascript"
   ],
   "peerDependencies"             : {
-    "@angular/common"            : "^6.0.0-rc.0 || ^6.0.0",
-    "@angular/core"              : "^6.0.0-rc.0 || ^6.0.0",
-    "@angular/http"              : "^6.0.3",
+    "@angular/common"            : "^6.0.0 || ^7.0.0",
+    "@angular/core"              : "^6.0.0 || ^7.0.0",
     "rxjs"                       : "^6.0.0",
     "rxjs-compat"                : "^6.0.0",
     "amazon-cognito-identity-js" : "^2.0.6",
