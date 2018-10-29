@@ -1,19 +1,18 @@
 // Angular modules
-import { Injectable }        from '@angular/core';
-import { Inject }            from '@angular/core';
-import { Optional }          from '@angular/core';
-import { EventEmitter }      from '@angular/core';
-import { HttpClient }        from '@angular/common/http';
+import { Injectable }   from '@angular/core';
+import { Inject }       from '@angular/core';
+import { Optional }     from '@angular/core';
+import { EventEmitter } from '@angular/core';
 
 // External modules
-import { Observable }        from 'rxjs';
-import { from }              from 'rxjs';
-import * as AWS              from 'aws-sdk';
-import * as AWSCognito       from 'amazon-cognito-identity-js';
+import { Observable }   from 'rxjs';
+import { from }         from 'rxjs';
+import * as AWS         from 'aws-sdk';
+import * as AWSCognito  from 'amazon-cognito-identity-js';
 
 // Internal modules
-import { AuthType }          from './enums/auth-type.enum';
-import { RespType }          from './enums/resp-type.enum';
+import { AuthType }     from './enums/auth-type.enum';
+import { RespType }     from './enums/resp-type.enum';
 
 export enum GoogleAction
 {
@@ -54,8 +53,7 @@ export class CognitoService
 
   constructor
   (
-    @Inject('cognitoConst') @Optional() public cognitoConst : any,
-    private http ?: HttpClient
+    @Inject('cognitoConst') @Optional() public cognitoConst : any
   )
   {
     this.onSignIn             = new EventEmitter();
@@ -270,7 +268,7 @@ export class CognitoService
   // -------------------------------------------------------------------------------------------
 
   /**
-   * Signup user
+   * Register a new user
    *
    * @param username
    * @param password
@@ -297,7 +295,7 @@ export class CognitoService
   }
 
   /**
-   * Confirm the signup action
+   * Confirm the signUp action
    *
    * @param verificationCode
    * @param forceAliasCreation - Optional parameter
@@ -429,7 +427,7 @@ export class CognitoService
   // -------------------------------------------------------------------------------------------
 
   /**
-   * Login user after they set a new password, if a new password is required
+   * Set a new password on the first connection (if a new password is required)
    *
    * @param newPassword
    * @param requiredAttributeData - Optional parameter
@@ -681,6 +679,13 @@ export class CognitoService
   // NOTE: Authentication ----------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
+  /**
+   * Connect an existing user
+   *
+   * @param provider - Use the AuthType enum to send an authorized authentication provider
+   * @param username
+   * @param password
+   */
   public signIn(provider : string, username ?: string, password ?: string) : Observable<any>
   {
     return from(new Promise((resolve, reject) =>
@@ -700,6 +705,9 @@ export class CognitoService
     }));
   }
 
+  /**
+   * Refresh a user's session (retrieve refreshed tokens)
+   */
   public refreshSession() : Observable<any>
   {
     let provider : string = null;
@@ -748,12 +756,6 @@ export class CognitoService
   // NOTE: Cognito -----------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  /**
-   * Login user
-   *
-   * @param username
-   * @param password
-   */
   private authenticateCognitoUser(username : string, password : string) : Observable<any>
   {
     let authenticationData : AWSCognito.IAuthenticationDetailsData = {
@@ -783,7 +785,7 @@ export class CognitoService
         },
         onFailure : (err) =>
         {
-          console.error('CognitoService : signInPool -> authenticateUser', err);
+          console.error('CognitoService : authenticateCognitoUser -> authenticateUser', err);
           return reject({ type : RespType.ON_FAILURE, data : err });
         },
         mfaSetup : (challengeName : any, challengeParameters : any) =>
@@ -808,9 +810,6 @@ export class CognitoService
     }));
   }
 
-  /**
-   * Refresh a user's session (retrieve refreshed tokens)
-   */
   private refreshCognitoSession() : Observable<any>
   {
     let tokens       = this.getTokens();
@@ -943,12 +942,12 @@ export class CognitoService
       (onRejected : any) =>
       {
         // Can be : popup_blocked_by_browser
-        console.error('CognitoService : loginGoogle -> signIn', onRejected);
+        console.error('CognitoService : authenticateGoogleUser -> signIn', onRejected);
         return reject({ type : RespType.ON_REJECTED, data : onRejected });
       })
       .catch((err) =>
       {
-        console.error('CognitoService : loginGoogle -> signIn', err);
+        console.error('CognitoService : authenticateGoogleUser -> signIn', err);
         return reject({ type : RespType.ON_FAILURE, data : err });
       });
     }));
@@ -1054,7 +1053,7 @@ export class CognitoService
     storageKey = this.storagePrefix + 'SessionTokens';
     tokensObj  = {
       accessToken          : session.getAccessToken().getJwtToken(),
-      accessTokenExpiresAt : session.getAccessToken().getExpiration(),
+      accessTokenExpiresAt : session.getAccessToken().getExpiration() * 1000, // Seconds to milliseconds
       idToken              : session.getIdToken().getJwtToken(),
       idTokenExpiresAt     : session.getIdToken().getExpiration() * 1000, // Seconds to milliseconds
       refreshToken         : session.getRefreshToken().getToken()

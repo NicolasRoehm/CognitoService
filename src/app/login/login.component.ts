@@ -30,7 +30,7 @@ export class LoginComponent
   )
   {
     if(this.cognitoHelper.cognitoService.isAuthenticated())
-      this.onSuccessLogin();
+      this.successfulConnection();
   }
 
   // -------------------------------------------------------------------------------------------
@@ -49,7 +49,7 @@ export class LoginComponent
 
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
     {
-      this.onSuccessLogin();
+      this.successfulConnection();
     },
     err =>
     {
@@ -68,9 +68,9 @@ export class LoginComponent
 
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
     {
-      // Successful signIn
+      // Successful connection
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
-        this.onSuccessLogin();
+        this.successfulConnection();
 
       // First connection
       if(res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
@@ -174,9 +174,9 @@ export class LoginComponent
   // NOTE: Private functions -------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
-  private onSuccessLogin() : void
+  private successfulConnection() : void
   {
-    console.log('LoginComponent : onSuccessLogin');
+    console.log('LoginComponent : successfulConnection');
     console.log('%c' + 'Username : '  + this.cognitoHelper.cognitoService.getUsername()  , 'color: white; background-color: #0764D3;');
     console.log('%c' + 'Provider : '  + this.cognitoHelper.cognitoService.getProvider()  , 'color: white; background-color: green;');
     console.log('%c' + 'IdToken : '   + this.cognitoHelper.cognitoService.getIdToken()   , 'color: white; background-color: black;');
