@@ -875,7 +875,7 @@ this.cognitoHelper.cognitoService.resendConfirmationCode();
 Connect an existing user with Google or Cognito.
 ##### Google
 ```typescript
-this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
+this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res => {
   // Success
 }, err => {
   // Error
