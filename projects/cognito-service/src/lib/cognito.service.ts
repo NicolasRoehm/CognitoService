@@ -780,6 +780,7 @@ export class CognitoService
           this.updateTokens(session);
           this.setProvider(AuthType.COGNITO);
           this.updateCredentials();
+
           this.onSignIn.emit();
           return resolve({ type : RespType.ON_SUCCESS, data : session });
         },
@@ -824,6 +825,7 @@ export class CognitoService
         {
           this.updateTokens(res);
           this.updateCredentials();
+
           return resolve({ type : RespType.ON_SUCCESS, data : res });
         }
         console.error('CognitoService : refreshSession -> refreshSession', err);
@@ -924,16 +926,14 @@ export class CognitoService
       };
       this.googleAuth.signIn(options).then((googleUser : gapi.auth2.GoogleUser) =>
       {
-        let idToken  : string                  = null;
         let profile  : gapi.auth2.BasicProfile = null;
         let response : gapi.auth2.AuthResponse = null;
 
-        idToken  = googleUser.getId();
         response = googleUser.getAuthResponse();
         profile  = googleUser.getBasicProfile();
 
         this.setUsername(profile.getName());
-        this.setIdToken(idToken);
+        this.setIdToken(response.id_token);
         this.setExpiresAt(response.expires_at);
         this.setProvider(AuthType.GOOGLE);
         this.updateCredentials();
@@ -967,6 +967,7 @@ export class CognitoService
         this.setIdToken(res.id_token);
         this.setExpiresAt(res.expires_at);
         this.updateCredentials();
+
         return resolve({ type : RespType.ON_SUCCESS, data : res });
       })
       .catch(err =>
@@ -1013,7 +1014,7 @@ export class CognitoService
     let logins : any = {};
     logins[url] = idToken;
 
-    if(this.identityPool)
+    if(!this.identityPool)
     {
       console.info('We recommend that you provide an identity pool ID from a federated identity');
       return;
@@ -1024,6 +1025,7 @@ export class CognitoService
       Logins         : logins
     };
 
+    AWS.config.region      = this.region;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials(options);
   }
 
