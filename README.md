@@ -24,12 +24,12 @@ It also implements [@ng-idle](https://github.com/HackedByChinese/ng2-idle) and [
   * [CognitoService](#cognitoservice)
   * [External packages](#external-packages)
     + [LoginComponent](#logincomponent)
-    + [NgIdle & Moment](#ngidle-&-moment)
+    + [NgIdle and Moment](#ngidle-and-moment)
 - [Usage](#usage)
   * [CognitoService](#cognitoservice-1)
   * [External packages](#external-packages-1)
     + [LoginComponent](#logincomponent-1)
-    + [NgIdle & Moment](#ngidle-&-moment-1)
+    + [NgIdle and Moment](#ngidle-and-moment-1)
 - [Variables](#variables)
 - [Methods](#methods)
   * [Registration](#registration)
@@ -450,7 +450,7 @@ app/
 ```
 </details>
 
-#### NgIdle & Moment
+#### NgIdle and Moment
 <details>
   <summary>Show / Hide : Installation</summary>
 
@@ -688,7 +688,7 @@ export class LoginComponent
 ```
 </details>
 
-#### NgIdle & Moment
+#### NgIdle and Moment
 
 <details>
   <summary>Show / Hide : Usage</summary>
