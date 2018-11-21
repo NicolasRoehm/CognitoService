@@ -108,8 +108,9 @@ export const CognitoConst = {
     ClientId       : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoUserPoolClient
     Paranoia       : 7 // An integer between 1 - 10
   },
-  // Admin (optional)
+  identityPool     : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX', // CognitoIdentityPool
   region           : 'eu-west-1', // Region matching CognitoUserPool region
+  // Admin (optional)
   adminAccessKeyId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX',
   adminSecretKeyId : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX'
 };

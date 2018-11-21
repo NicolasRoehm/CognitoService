@@ -42,9 +42,9 @@ export class CognitoService
     ClientId   : null  // CognitoUserPoolClient
   };
 
-  // private identityPool     : string; // CognitoIdentityPool
-
+  private identityPool     : string; // CognitoIdentityPool
   private region           : string; // Region Matching CognitoUserPool region
+
   private adminAccessKeyId : string;
   private adminSecretKeyId : string;
 
@@ -68,7 +68,7 @@ export class CognitoService
     this.poolData.UserPoolId = cognitoConst.poolData.UserPoolId;
     this.poolData.ClientId   = cognitoConst.poolData.ClientId;
 
-    // this.identityPool        = cognitoConst.identityPool;
+    this.identityPool        = cognitoConst.identityPool;
 
     this.region              = cognitoConst.region;
     this.adminAccessKeyId    = cognitoConst.adminAccessKeyId;
@@ -779,7 +779,7 @@ export class CognitoService
           this.setUsername(username);
           this.updateTokens(session);
           this.setProvider(AuthType.COGNITO);
-
+          this.updateCredentials();
           this.onSignIn.emit();
           return resolve({ type : RespType.ON_SUCCESS, data : session });
         },
@@ -823,6 +823,7 @@ export class CognitoService
         if(res)
         {
           this.updateTokens(res);
+          this.updateCredentials();
           return resolve({ type : RespType.ON_SUCCESS, data : res });
         }
         console.error('CognitoService : refreshSession -> refreshSession', err);
@@ -935,6 +936,7 @@ export class CognitoService
         this.setIdToken(idToken);
         this.setExpiresAt(response.expires_at);
         this.setProvider(AuthType.GOOGLE);
+        this.updateCredentials();
 
         this.onSignIn.emit();
         return resolve({ type : RespType.ON_SUCCESS, data : profile });
@@ -964,6 +966,7 @@ export class CognitoService
       {
         this.setIdToken(res.id_token);
         this.setExpiresAt(res.expires_at);
+        this.updateCredentials();
         return resolve({ type : RespType.ON_SUCCESS, data : res });
       })
       .catch(err =>
@@ -979,6 +982,49 @@ export class CognitoService
     this.googleAuth.signOut().then(() => {
       this.googleAuth.disconnect();
     });
+  }
+
+  // -------------------------------------------------------------------------------------------
+  // NOTE: Credentials -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  private updateCredentials() : void
+  {
+    let url      : string = null;
+    let provider : string = null;
+    let idToken  : string = null;
+
+    provider = this.getProvider();
+    idToken  = this.getIdToken();
+
+    switch(provider)
+    {
+      case AuthType.COGNITO :
+        url = 'cognito-identity.amazonaws.com';
+        break;
+      case AuthType.GOOGLE :
+        url = 'accounts.google.com';
+        break;
+      default :
+        console.error('CognitoService : setCredentials -> Provider not recognized');
+        return;
+    }
+
+    let logins : any = {};
+    logins[url] = idToken;
+
+    if(this.identityPool)
+    {
+      console.info('We recommend that you provide an identity pool ID from a federated identity');
+      return;
+    }
+
+    let options : AWS.CognitoIdentityCredentials.CognitoIdentityOptions = {
+      IdentityPoolId : this.identityPool,
+      Logins         : logins
+    };
+
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials(options);
   }
 
   // -------------------------------------------------------------------------------------------
