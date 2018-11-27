@@ -80,7 +80,7 @@ cd CognitoService/
 npm install
 ```
 
-Don't forget to edit the parameters located in [src/app/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/cognito.const.ts).
+Don't forget to edit the parameters located in [src/app/shared/consts/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/consts/cognito.const.ts).
 
 ```sh
 ng build cognito-service --prod

@@ -924,7 +924,7 @@ export class CognitoService
       let options : gapi.auth2.SigninOptions = {
         scope : this.googleScope
       };
-      this.googleAuth.signIn(options).then((googleUser : gapi.auth2.GoogleUser) =>
+      gapi.auth2.getAuthInstance().signIn(options).then((googleUser : gapi.auth2.GoogleUser) =>
       {
         let profile  : gapi.auth2.BasicProfile = null;
         let response : gapi.auth2.AuthResponse = null;
