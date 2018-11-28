@@ -1057,12 +1057,20 @@ let remaining : Number = this.cognitoHelper.cognitoService.getRemaining(); // mi
 
 ### Get credentials
 ```typescript
-let credentials : AWS.Credentials = this.cognitoHelper.cognitoService.getCredentials();
+this.cognitoHelper.cognitoService.getCredentials().subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
 ```
 
-### STS
+### STS / getCallerIdentity
 ```typescript
-let identity : AWS.STS.GetCallerIdentityResponse = this.cognitoHelper.cognitoService.sts(); // getCallerIdentity
+this.cognitoHelper.cognitoService.sts().subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
 ```
 
 ## Admin

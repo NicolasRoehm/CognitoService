@@ -80,7 +80,7 @@ cd CognitoService/
 npm install
 ```
 
-Don't forget to edit the parameters located in [src/app/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/cognito.const.ts).
+Don't forget to edit the parameters located in [src/app/shared/consts/cognito.const.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/shared/consts/cognito.const.ts).
 
 ```sh
 ng build cognito-service --prod
@@ -1053,6 +1053,24 @@ let expiresAt : Date = this.cognitoHelper.cognitoService.getExpiresAt();
 ### Get the remaining time
 ```typescript
 let remaining : Number = this.cognitoHelper.cognitoService.getRemaining(); // milliseconds
+```
+
+### Get credentials
+```typescript
+this.cognitoHelper.cognitoService.getCredentials().subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
+```
+
+### STS / getCallerIdentity
+```typescript
+this.cognitoHelper.cognitoService.sts().subscribe(res => {
+  // Success
+}, err => {
+  // Error
+});
 ```
 
 ## Admin
