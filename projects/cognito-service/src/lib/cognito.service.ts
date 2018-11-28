@@ -76,7 +76,7 @@ export class CognitoService
   }
 
   // -------------------------------------------------------------------------------------------
-  // NOTE: Helpers -----------------------------------------------------------------------------
+  // SECTION: Helpers --------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   // NOTE: Misc --------------------------------------------------------------------------------
@@ -100,23 +100,6 @@ export class CognitoService
           return resolve(data);
         console.error('CognitoService : sts -> getCallerIdentity', err);
         return reject(err);
-      });
-    }));
-  }
-
-  public getCredentials() : Observable<any>
-  {
-    return from(new Promise((resolve, reject) =>
-    {
-      let credentials = AWS.config.credentials as any;
-      credentials.get((err) =>
-      {
-        if(err)
-        {
-          console.error('CognitoService : getCredentials', err);
-          return reject(err);
-        }
-        return resolve(AWS.config.credentials);
       });
     }));
   }
@@ -225,8 +208,79 @@ export class CognitoService
     return tokensObj;
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: User --------------------------------------------------------------------------------
+  // SECTION: Credentials ----------------------------------------------------------------------
+  // -------------------------------------------------------------------------------------------
+
+  public getCredentials() : Observable<any>
+  {
+    return from(new Promise((resolve, reject) =>
+    {
+      let credentials = AWS.config.credentials as any;
+      if(!credentials)
+      {
+        let error = 'The user must be logged in to get his credentials';
+        console.error('CognitoService : getCredentials', error);
+        return reject(error);
+      }
+      credentials.get((err) =>
+      {
+        if(err)
+        {
+          console.error('CognitoService : getCredentials', err);
+          return reject(err);
+        }
+        return resolve(AWS.config.credentials);
+      });
+    }));
+  }
+
+  public updateCredentials() : void
+  {
+    let url      : string = null;
+    let provider : string = null;
+    let idToken  : string = null;
+
+    provider = this.getProvider();
+    idToken  = this.getIdToken();
+
+    switch(provider)
+    {
+      case AuthType.COGNITO :
+        url = 'cognito-identity.amazonaws.com';
+        break;
+      case AuthType.GOOGLE :
+        url = 'accounts.google.com';
+        break;
+      default :
+        console.error('CognitoService : setCredentials -> Provider not recognized');
+        return;
+    }
+
+    let logins : any = {};
+    logins[url] = idToken;
+
+    if(!this.identityPool)
+    {
+      console.info('We recommend that you provide an identity pool ID from a federated identity');
+      return;
+    }
+
+    let options : AWS.CognitoIdentityCredentials.CognitoIdentityOptions = {
+      IdentityPoolId : this.identityPool,
+      Logins         : logins
+    };
+
+    AWS.config.region      = this.region;
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials(options);
+  }
+
+  // !SECTION
+
+  // -------------------------------------------------------------------------------------------
+  // SECTION: User -----------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   public getCognitoUser(username : string = null) : AWSCognito.CognitoUser
@@ -296,8 +350,10 @@ export class CognitoService
     });
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: Registration ------------------------------------------------------------------------
+  // SECTION: Registration ---------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   /**
@@ -368,8 +424,10 @@ export class CognitoService
     }));
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: MFA ---------------------------------------------------------------------------------
+  // SECTION: MFA ------------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   /**
@@ -455,8 +513,10 @@ export class CognitoService
     }));
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: Password ----------------------------------------------------------------------------
+  // SECTION: Password -------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   /**
@@ -600,8 +660,10 @@ export class CognitoService
     }));
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: Admin -------------------------------------------------------------------------------
+  // SECTION: Admin ----------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   public adminCreateUser(username : string, password : string) : Observable<any>
@@ -708,8 +770,10 @@ export class CognitoService
     AWS.config.credentials = creds;
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: Authentication ----------------------------------------------------------------------
+  // SECTION: Authentication -------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   /**
@@ -785,8 +849,10 @@ export class CognitoService
     this.clearStorage();
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: Cognito -----------------------------------------------------------------------------
+  // SECTION: Cognito --------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   private authenticateCognitoUser(username : string, password : string) : Observable<any>
@@ -874,8 +940,10 @@ export class CognitoService
       cognitoUser.signOut();
   }
 
+  // !SECTION
+
   // -------------------------------------------------------------------------------------------
-  // NOTE: Google ------------------------------------------------------------------------------
+  // SECTION: Google ---------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   private initGoogle() : Observable<any>
@@ -1018,56 +1086,14 @@ export class CognitoService
     });
   }
 
-  // -------------------------------------------------------------------------------------------
-  // NOTE: Credentials -------------------------------------------------------------------------
-  // -------------------------------------------------------------------------------------------
-
-  private updateCredentials() : void
-  {
-    let url      : string = null;
-    let provider : string = null;
-    let idToken  : string = null;
-
-    provider = this.getProvider();
-    idToken  = this.getIdToken();
-
-    switch(provider)
-    {
-      case AuthType.COGNITO :
-        url = 'cognito-identity.amazonaws.com';
-        break;
-      case AuthType.GOOGLE :
-        url = 'accounts.google.com';
-        break;
-      default :
-        console.error('CognitoService : setCredentials -> Provider not recognized');
-        return;
-    }
-
-    let logins : any = {};
-    logins[url] = idToken;
-
-    if(!this.identityPool)
-    {
-      console.info('We recommend that you provide an identity pool ID from a federated identity');
-      return;
-    }
-
-    let options : AWS.CognitoIdentityCredentials.CognitoIdentityOptions = {
-      IdentityPoolId : this.identityPool,
-      Logins         : logins
-    };
-
-    AWS.config.region      = this.region;
-    AWS.config.credentials = new AWS.CognitoIdentityCredentials(options);
-  }
+  // !SECTION
 
   // -------------------------------------------------------------------------------------------
   // TODO: Facebook ----------------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   // -------------------------------------------------------------------------------------------
-  // NOTE: Private helpers ---------------------------------------------------------------------
+  // SECTION: Private helpers ------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
   // NOTE: User --------------------------------------------------------------------------------
@@ -1162,5 +1188,7 @@ export class CognitoService
     localStorage.removeItem(this.storagePrefix + 'ExpiresAt');
     localStorage.removeItem(this.storagePrefix + 'SessionTokens');
   }
+
+  // !SECTION
 
 }

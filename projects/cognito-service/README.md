@@ -1055,6 +1055,11 @@ let expiresAt : Date = this.cognitoHelper.cognitoService.getExpiresAt();
 let remaining : Number = this.cognitoHelper.cognitoService.getRemaining(); // milliseconds
 ```
 
+### Update credentials
+```typescript
+this.cognitoHelper.cognitoService.updateCredentials();
+```
+
 ### Get credentials
 ```typescript
 this.cognitoHelper.cognitoService.getCredentials().subscribe(res => {
