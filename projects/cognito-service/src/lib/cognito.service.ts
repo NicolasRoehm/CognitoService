@@ -88,6 +88,38 @@ export class CognitoService
     return false;
   }
 
+  public sts() : any
+  {
+    return from(new Promise((resolve, reject) =>
+    {
+      let sts = new AWS.STS();
+      sts.getCallerIdentity((err, data) =>
+      {
+        if(data)
+          return resolve(data);
+        console.error('CognitoService : sts -> getCallerIdentity', err);
+        return reject(err);
+      });
+    }));
+  }
+
+  public getCredentials() : Observable<any>
+  {
+    return from(new Promise((resolve, reject) =>
+    {
+      let credentials = AWS.config.credentials as any;
+      credentials.get((err) =>
+      {
+        if(err)
+        {
+          console.error('CognitoService : getCredentials', err);
+          return reject(err);
+        }
+        return resolve(AWS.config.credentials);
+      });
+    }));
+  }
+
   // NOTE: Session -----------------------------------------------------------------------------
 
   public updateSessionTime() : void
