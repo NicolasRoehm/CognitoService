@@ -88,6 +88,39 @@ export class CognitoService
     return false;
   }
 
+  public sts() : any
+  {
+    return from(new Promise((resolve, reject) =>
+    {
+      let sts = new AWS.STS();
+      let params : AWS.STS.GetCallerIdentityRequest = null;
+      sts.getCallerIdentity(params, (err : AWS.AWSError, data : AWS.STS.GetCallerIdentityResponse) =>
+      {
+        if(data)
+          return resolve(data);
+        console.error('CognitoService : sts -> getCallerIdentity', err);
+        return reject(err);
+      });
+    }));
+  }
+
+  public getCredentials() : Observable<any>
+  {
+    return from(new Promise((resolve, reject) =>
+    {
+      let credentials = AWS.config.credentials as any;
+      credentials.get((err) =>
+      {
+        if(err)
+        {
+          console.error('CognitoService : getCredentials', err);
+          return reject(err);
+        }
+        return resolve(AWS.config.credentials);
+      });
+    }));
+  }
+
   // NOTE: Session -----------------------------------------------------------------------------
 
   public updateSessionTime() : void
@@ -924,7 +957,7 @@ export class CognitoService
       let options : gapi.auth2.SigninOptions = {
         scope : this.googleScope
       };
-      this.googleAuth.signIn(options).then((googleUser : gapi.auth2.GoogleUser) =>
+      gapi.auth2.getAuthInstance().signIn(options).then((googleUser : gapi.auth2.GoogleUser) =>
       {
         let profile  : gapi.auth2.BasicProfile = null;
         let response : gapi.auth2.AuthResponse = null;

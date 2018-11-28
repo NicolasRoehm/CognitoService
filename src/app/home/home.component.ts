@@ -48,6 +48,28 @@ export class HomeComponent
   // Do not add these two following functions inside your project !
   // You can use them to test the cognito service if you are logged in.
 
+  // NOTE: Misc --------------------------------------------------------------------------------
+
+  public sts() : void
+  {
+    this.cognitoHelper.cognitoService.sts().subscribe(res =>
+    {
+      console.log(res);
+    }, err => {
+      console.error(err);
+    });
+  }
+
+  public getCredentials() : void
+  {
+    this.cognitoHelper.cognitoService.getCredentials().subscribe(res =>
+    {
+      console.log(res);
+    }, err => {
+      console.error(err);
+    });
+  }
+
   // NOTE: Refresh session ---------------------------------------------------------------------
 
   public refresh() : void
