@@ -93,7 +93,8 @@ export class CognitoService
     return from(new Promise((resolve, reject) =>
     {
       let sts = new AWS.STS();
-      sts.getCallerIdentity((err, data) =>
+      let params : AWS.STS.GetCallerIdentityRequest = null;
+      sts.getCallerIdentity(params, (err : AWS.AWSError, data : AWS.STS.GetCallerIdentityResponse) =>
       {
         if(data)
           return resolve(data);

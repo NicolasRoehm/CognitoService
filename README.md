@@ -1055,6 +1055,16 @@ let expiresAt : Date = this.cognitoHelper.cognitoService.getExpiresAt();
 let remaining : Number = this.cognitoHelper.cognitoService.getRemaining(); // milliseconds
 ```
 
+### Get credentials
+```typescript
+let credentials : AWS.Credentials = this.cognitoHelper.cognitoService.getCredentials();
+```
+
+### STS
+```typescript
+let identity : AWS.STS.GetCallerIdentityResponse = this.cognitoHelper.cognitoService.sts(); // getCallerIdentity
+```
+
 ## Admin
 
 ### Admin create user

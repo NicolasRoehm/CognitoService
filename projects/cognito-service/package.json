@@ -1,7 +1,7 @@
 {
   "name"        : "@caliatys/cognito-service",
   "description" : "Typescript service for AWS Cognito with Angular",
-  "version"     : "1.2.9",
+  "version"     : "1.2.10",
   "author"      : "Nicolas Roehm <nicolas.roehm@gmail.com>",
   "license"     : "MIT",
   "private"     : false,
