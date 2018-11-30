@@ -8,6 +8,7 @@ import { EventEmitter } from '@angular/core';
 import { Observable }   from 'rxjs';
 import { from }         from 'rxjs';
 import * as AWS         from 'aws-sdk';
+import * as awsservice  from 'aws-sdk/lib/service';
 import * as AWSCognito  from 'amazon-cognito-identity-js';
 
 // Internal modules
@@ -237,7 +238,7 @@ export class CognitoService
     }));
   }
 
-  public updateCredentials() : void
+  public updateCredentials(clientConfig ?: awsservice.ServiceConfigurationOptions) : void
   {
     let url      : string = null;
     let provider : string = null;
@@ -249,7 +250,7 @@ export class CognitoService
     switch(provider)
     {
       case AuthType.COGNITO :
-        url = 'cognito-identity.amazonaws.com';
+        url = 'cognito-idp.' + this.region.toLowerCase() + '.amazonaws.com/' + this.poolData.UserPoolId;
         break;
       case AuthType.GOOGLE :
         url = 'accounts.google.com';
@@ -274,7 +275,7 @@ export class CognitoService
     };
 
     AWS.config.region      = this.region;
-    AWS.config.credentials = new AWS.CognitoIdentityCredentials(options);
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials(options, clientConfig);
   }
 
   // !SECTION
