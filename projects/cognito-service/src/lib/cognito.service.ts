@@ -559,7 +559,7 @@ export class CognitoService
    */
   public forgotPassword(username : string) : Observable<any>
   {
-    let cognitoUser = this.getCognitoUser(username);
+    let cognitoUser = this.setCognitoUser(username);
 
     return from(new Promise((resolve, reject) =>
     {
