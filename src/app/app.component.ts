@@ -50,6 +50,8 @@ export class AppComponent implements OnInit, OnDestroy
   public ngOnInit() : void
   {
     this.isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
+    if(this.isAuthenticated)
+      this.cognitoHelper.cognitoService.updateCredentials();
 
     this.setIdle();
 
