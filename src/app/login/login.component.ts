@@ -47,11 +47,10 @@ export class LoginComponent
     if(social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
-    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).then(res =>
     {
       this.successfulConnection();
-    },
-    err =>
+    }).catch(err =>
     {
       console.error('LoginComponent : loginSocial -> signIn', err);
     });
@@ -66,7 +65,7 @@ export class LoginComponent
     username = $event.username;
     password = $event.password;
 
-    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).then(res =>
     {
       // Successful connection
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
@@ -83,8 +82,7 @@ export class LoginComponent
       // MFA setup : associate secret code
       if(res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
         this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
-    },
-    err =>
+    }).catch(err =>
     {
       // ON_FAILURE / MFA_SETUP_ON_FAILURE
       console.error('LoginComponent : login -> signIn', err);
@@ -101,7 +99,7 @@ export class LoginComponent
     username    = $event.username;
     newPassword = $event.password;
 
-    this.cognitoHelper.cognitoService.newPasswordRequired(newPassword).subscribe(res =>
+    this.cognitoHelper.cognitoService.newPasswordRequired(newPassword).then(res =>
     {
       // Success
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
@@ -113,8 +111,7 @@ export class LoginComponent
       // MFA required
       if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
-    },
-    err =>
+    }).catch(err =>
     {
       console.error('LoginComponent : firstPassword -> changePassword', err);
       this.snackBar.open(err.data.message, 'X');
@@ -134,13 +131,12 @@ export class LoginComponent
       return;
     }
 
-    this.cognitoHelper.cognitoService.forgotPassword(username).subscribe(res =>
+    this.cognitoHelper.cognitoService.forgotPassword(username).then(res =>
     {
       // Verification code
       if(res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
         this.loginForm.showPwdForm(false);
-    },
-    err =>
+    }).catch(err =>
     {
       console.error('LoginComponent : forgotPassword -> forgotPassword', err);
       this.snackBar.open(err.data.message, 'X');
@@ -158,12 +154,11 @@ export class LoginComponent
     newPassword = $event.password;
     verifCode   = $event.verificationCode;
 
-    this.cognitoHelper.cognitoService.confirmPassword(newPassword, verifCode).subscribe(res =>
+    this.cognitoHelper.cognitoService.confirmPassword(newPassword, verifCode).then(res =>
     {
       this.loginForm.hidePwdForm(newPassword);
       this.snackBar.open(this.translate.instant('SUCCESS_UPDATE_PWD'), 'x');
-    },
-    err =>
+    }).catch(err =>
     {
       console.error('LoginComponent : resetPassword -> confirmPassword', err);
       this.snackBar.open(err.data.message, 'X');
