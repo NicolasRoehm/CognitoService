@@ -276,11 +276,6 @@ export class CognitoService
 
     AWS.config.region      = this.region;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials(options, clientConfig);
-
-    AWS.config.update({
-      region      : this.region,
-      credentials : new AWS.CognitoIdentityCredentials(options, clientConfig)
-    });
   }
 
   // !SECTION
