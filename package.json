@@ -1,7 +1,7 @@
 {
   "name": "cognito-service-app",
   "description": "Typescript service for AWS Cognito with Angular",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "author": "Nicolas Roehm <nicolas.roehm@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/Caliatys/CognitoService#readme",
