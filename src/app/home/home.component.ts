@@ -52,20 +52,20 @@ export class HomeComponent
 
   public sts() : void
   {
-    this.cognitoHelper.cognitoService.sts().subscribe(res =>
+    this.cognitoHelper.cognitoService.sts().then(res =>
     {
       console.log(res);
-    }, err => {
+    }).catch(err => {
       console.error(err);
     });
   }
 
   public getCredentials() : void
   {
-    this.cognitoHelper.cognitoService.getCredentials().subscribe(res =>
+    this.cognitoHelper.cognitoService.getCredentials().then(res =>
     {
       console.log(res);
-    }, err => {
+    }).catch(err => {
       console.error(err);
     });
   }
@@ -74,10 +74,10 @@ export class HomeComponent
 
   public refresh() : void
   {
-    this.cognitoHelper.cognitoService.refreshSession().subscribe(res => {
+    this.cognitoHelper.cognitoService.refreshSession().then(res => {
       console.log(res);
       console.log(new Date(res.data.expires_at));
-    }, err => {
+    }).catch(err => {
       console.log(err);
     });
   }

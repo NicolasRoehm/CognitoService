@@ -166,6 +166,9 @@ Add the API inside the `<head>` of [index.html](https://github.com/Caliatys/Cogn
 <script src="https://apis.google.com/js/platform.js"></script>
 ```
 
+Add the Google type declaration :
+- Add `"types": ["node", "gapi", "gapi.auth2"]` to the [tsconfig.app.json](https://github.com/Caliatys/CognitoService/blob/master/src/tsconfig.app.json) file that the angular-cli creates in the `src` directory.
+
 ### External packages
 
 #### LoginComponent
@@ -568,11 +571,10 @@ export class LoginComponent
     if(social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
-    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).then(res =>
     {
       this.successfulConnection();
-    },
-    err =>
+    }).catch(err =>
     {
       console.error(err);
     });
@@ -587,7 +589,7 @@ export class LoginComponent
     username = $event.username;
     password = $event.password;
 
-    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).subscribe(res =>
+    this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).then(res =>
     {
       // Successful signIn
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
@@ -604,8 +606,7 @@ export class LoginComponent
       // MFA setup : associate secret code
       if(res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
         this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
-    },
-    err =>
+    }).catch(err =>
     {
       // ON_FAILURE / MFA_SETUP_ON_FAILURE
       console.error('LoginComponent : login -> signIn', err);
@@ -622,7 +623,7 @@ export class LoginComponent
     username    = $event.username;
     newPassword = $event.password;
 
-    this.cognitoHelper.cognitoService.newPasswordRequired(newPassword).subscribe(res =>
+    this.cognitoHelper.cognitoService.newPasswordRequired(newPassword).then(res =>
     {
       // Success
       if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
@@ -630,8 +631,7 @@ export class LoginComponent
       // MFA required
       if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
-    },
-    err =>
+    }).catch(err =>
     {
       console.error('LoginComponent : firstPassword -> changePassword', err);
       this.snackBar.open(err.data.message, 'X');
@@ -648,13 +648,12 @@ export class LoginComponent
     if(!username)
       return; // Username required
 
-    this.cognitoHelper.cognitoService.forgotPassword(username).subscribe(res =>
+    this.cognitoHelper.cognitoService.forgotPassword(username).then(res =>
     {
       // Verification code
       if(res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
         this.loginForm.showPwdForm(false);
-    },
-    err =>
+    }).catch(err =>
     {
       console.error('LoginComponent : forgotPassword -> forgotPassword', err);
       this.snackBar.open(err.data.message, 'X');
@@ -670,11 +669,10 @@ export class LoginComponent
     newPassword = $event.password;
     verifCode   = $event.verificationCode;
 
-    this.cognitoHelper.cognitoService.confirmPassword(newPassword, verifCode).subscribe(res =>
+    this.cognitoHelper.cognitoService.confirmPassword(newPassword, verifCode).then(res =>
     {
       this.loginForm.hidePwdForm(newPassword); // Password updated successfully
-    },
-    err =>
+    }).catch(err =>
     {
       console.error('LoginComponent : resetPassword -> confirmPassword', err);
       this.snackBar.open(err.data.message, 'X');
@@ -741,6 +739,8 @@ export class AppComponent implements OnInit, OnDestroy
   public ngOnInit() : void
   {
     this.isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
+    if(this.isAuthenticated)
+      this.cognitoHelper.cognitoService.updateCredentials();
 
     this.setIdle();
 
@@ -849,20 +849,20 @@ public onSignOut : EventEmitter<null>;
 #### SignUp
 Register a new user :
 ```typescript
-this.cognitoHelper.cognitoService.signUp('username', 'password').subscribe(res => {
+this.cognitoHelper.cognitoService.signUp('username', 'password').then(res => {
 
   let signUpResult : AWSCognito.ISignUpResult = res.data;
 
-}, err => { });
+}).catch(err => { });
 ```
 
 #### Confirm registration
 Depending on your settings, email confirmation may be required.
 In that case, the following function must be called :
 ```typescript
-this.cognitoHelper.cognitoService.confirmRegistration().subscribe(res => {
+this.cognitoHelper.cognitoService.confirmRegistration().then(res => {
   // Success
-}, err => {
+}).catch(err => {
   // Error
 });
 ```
@@ -876,16 +876,16 @@ this.cognitoHelper.cognitoService.resendConfirmationCode();
 Connect an existing user with Google or Cognito.
 ##### Google
 ```typescript
-this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).subscribe(res => {
+this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).then(res => {
   // Success
-}, err => {
+}).catch(err => {
   // Error
 });
 ```
 
 ##### Cognito
 ```typescript
-this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, 'username', 'password').subscribe(res => {
+this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, 'username', 'password').then(res => {
 
   // Successful connection
   if(res.type === RespType.ON_SUCCESS)
@@ -901,7 +901,7 @@ this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, 'u
   if(res.type === RespType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
     let secretCode : string = res.data;
 
-}, err => {
+}).catch(err => {
 
   // Error
   if(err.type === RespType.ON_FAILURE)
@@ -918,11 +918,11 @@ this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, 'u
 Generate new `refreshToken`, `idToken` and `accessToken` with a new expiry date.
 If successful, you retrieve 3 auth tokens and the associated expiration dates (same as `signIn`).
 ```typescript
-this.cognitoHelper.cognitoService.refreshCognitoSession().subscribe(res => {
+this.cognitoHelper.cognitoService.refreshCognitoSession().then(res => {
 
   let session : AWSCognito.CognitoUserSession = res.data;
 
-}, err => { });
+}).catch(err => { });
 ```
 
 #### SignOut
@@ -935,29 +935,29 @@ this.cognitoHelper.cognitoService.signOut();
 #### Send MFA code
 Complete the `MFA_REQUIRED` sent by the `signIn` or by the `newPasswordRequired` method using the mfaCode received by SMS to finish the signIn flow.
 ```typescript
-this.cognitoHelper.cognitoService.sendMFACode('mfaCode', 'SOFTWARE_TOKEN_MFA or SMS_MFA').subscribe(res => {
+this.cognitoHelper.cognitoService.sendMFACode('mfaCode', 'SOFTWARE_TOKEN_MFA or SMS_MFA').then(res => {
 
   let session : AWSCognito.CognitoUserSession = res.data;
 
-}, err => { });
+}).catch(err => { });
 ```
 
 #### Get MFA status
 If MFA is enabled for this user, retrieve its options. Otherwise, returns null.
 ```typescript
-this.cognitoHelper.cognitoService.getMFAOptions().subscribe(res => {
+this.cognitoHelper.cognitoService.getMFAOptions().then(res => {
 
   let mfaOptions : AWSCognito.MFAOption[] = res.data;
 
-}, err => { });
+}).catch(err => { });
 ```
 
 #### Enable / Disable MFA
 ```typescript
 let enableMfa : boolean = true;
-this.cognitoHelper.cognitoService.setMfa(enableMfa).subscribe(res => {
+this.cognitoHelper.cognitoService.setMfa(enableMfa).then(res => {
   // Success
-}, err => {
+}).catch(err => {
   // Error
 });
 ```
@@ -967,7 +967,7 @@ this.cognitoHelper.cognitoService.setMfa(enableMfa).subscribe(res => {
 #### New password required
 Complete the `NEW_PASSWORD_REQUIRED` response sent by the `signIn` method to finish the first connection flow.
 ```typescript
-this.cognitoHelper.cognitoService.newPasswordRequired('newPassword').subscribe(res => {
+this.cognitoHelper.cognitoService.newPasswordRequired('newPassword').then(res => {
 
   // Success
   if(res.type === RespType.ON_SUCCESS)
@@ -975,27 +975,27 @@ this.cognitoHelper.cognitoService.newPasswordRequired('newPassword').subscribe(r
   // MFA required
   if(res.type === RespType.MFA_REQUIRED)
 
-}, err => { });
+}).catch(err => { });
 ```
 
 #### Forgot password
 Start a forgot password flow.
 Cognito will send a `verificationCode` to one of the user's confirmed contact methods (email or SMS) to be used in the `confirmPassword` method below.
 ```typescript
-this.cognitoHelper.cognitoService.forgotPassword('username').subscribe(res => {
+this.cognitoHelper.cognitoService.forgotPassword('username').then(res => {
 
   // Verification code
   if(res.type === RespType.INPUT_VERIFICATION_CODE)
 
-}, err => { });
+}).catch(err => { });
 ```
 
 #### Confirm password
 Complete the `INPUT_VERIFICATION_CODE` response sent by the `forgotPassword` method to finish the forgot password flow.
 ```typescript
-this.cognitoHelper.cognitoService.confirmPassword('newPassword', 'verificationCode').subscribe(res => {
+this.cognitoHelper.cognitoService.confirmPassword('newPassword', 'verificationCode').then(res => {
   // Success
-}, err => {
+}).catch(err => {
   // Error
 });
 ```
@@ -1003,9 +1003,9 @@ this.cognitoHelper.cognitoService.confirmPassword('newPassword', 'verificationCo
 #### Change password
 Use this method to change the user's password.
 ```typescript
-this.cognitoHelper.cognitoService.changePassword('oldPassword', 'newPassword').subscribe(res => {
+this.cognitoHelper.cognitoService.changePassword('oldPassword', 'newPassword').then(res => {
   // Success
-}, err => {
+}).catch(err => {
   // Error
 });
 ```
@@ -1062,18 +1062,18 @@ this.cognitoHelper.cognitoService.updateCredentials();
 
 ### Get credentials
 ```typescript
-this.cognitoHelper.cognitoService.getCredentials().subscribe(res => {
+this.cognitoHelper.cognitoService.getCredentials().then(res => {
   // Success
-}, err => {
+}).catch(err => {
   // Error
 });
 ```
 
 ### STS / getCallerIdentity
 ```typescript
-this.cognitoHelper.cognitoService.sts().subscribe(res => {
+this.cognitoHelper.cognitoService.sts().then(res => {
   // Success
-}, err => {
+}).catch(err => {
   // Error
 });
 ```
@@ -1082,30 +1082,30 @@ this.cognitoHelper.cognitoService.sts().subscribe(res => {
 
 ### Admin create user
 ```typescript
-this.cognitoHelper.cognitoService.adminCreateUser('username', 'password').subscribe(res => { }, err => { });
+this.cognitoHelper.cognitoService.adminCreateUser('username', 'password').then(res => { }).catch(err => { });
 ```
 
 ### Admin delete user
 ```typescript
-this.cognitoHelper.cognitoService.adminDeleteUser('username').subscribe(res => { }, err => { });
+this.cognitoHelper.cognitoService.adminDeleteUser('username').then(res => { }).catch(err => { });
 ```
 
 ### Admin reset user password
 ```typescript
-this.cognitoHelper.cognitoService.adminResetUserPassword('username').subscribe(res => { }, err => { });
+this.cognitoHelper.cognitoService.adminResetUserPassword('username').then(res => { }).catch(err => { });
 ```
 
 ### Admin update user attributes
 ```typescript
 let userAttributes : AWS.CognitoIdentityServiceProvider.Types.AttributeListType;
-this.cognitoHelper.cognitoService.adminUpdateUserAttributes('username', userAttributes).subscribe(res => { }, err => { });
+this.cognitoHelper.cognitoService.adminUpdateUserAttributes('username', userAttributes).then(res => { }).catch(err => { });
 ```
 
 ## Admin helpers
 
 ### Reset expired account
 ```typescript
-this.cognitoHelper.cognitoService.resetExpiredAccount('usernameKey', 'username').subscribe(res => { }, err => { });
+this.cognitoHelper.cognitoService.resetExpiredAccount('usernameKey', 'username').then(res => { }).catch(err => { });
 ```
 
 ### Set admin
