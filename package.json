@@ -1,12 +1,12 @@
 {
-  "name"        : "cognito-service-app",
-  "description" : "Typescript service for AWS Cognito with Angular",
-  "version"     : "1.4.0",
-  "author"      : "Nicolas Roehm <nicolas.roehm@gmail.com>",
-  "license"     : "MIT",
-  "homepage"    : "https://github.com/Caliatys/CognitoService#readme",
-  "private"     : false,
-  "keywords"    : [
+  "name": "cognito-service-app",
+  "description": "Typescript service for AWS Cognito with Angular",
+  "version": "1.4.2",
+  "author": "Nicolas Roehm <nicolas.roehm@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/Caliatys/CognitoService#readme",
+  "private": false,
+  "keywords": [
     "authentication",
     "aws",
     "cognito",
@@ -16,22 +16,22 @@
     "typescript",
     "javascript"
   ],
-  "repository" : {
-    "type" : "git",
-    "url"  : "git+https://github.com/Caliatys/CognitoService.git"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Caliatys/CognitoService.git"
   },
   "scripts": {
-    "ng"          : "ng",
-    "start"       : "ng serve",
-    "build"       : "ng build",
-    "test"        : "ng test",
-    "lint"        : "ng lint",
-    "e2e"         : "ng e2e",
-    "bar"         : "ng build --prod cognito-service && ng s --port=4200",
-    "build_lib"   : "ng build --prod cognito-service",
-    "npm_pack"    : "cd dist/cognito-service && npm pack",
-    "package"     : "npm run build_lib && npm run npm_pack",
-    "npm_publish" : "npm run package && cd dist/cognito-service && npm publish --access=public"
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "test": "ng test",
+    "lint": "ng lint",
+    "e2e": "ng e2e",
+    "bar": "ng build --prod cognito-service && ng s --port=4200",
+    "build_lib": "ng build --prod cognito-service",
+    "npm_pack": "cd dist/cognito-service && npm pack",
+    "package": "npm run build_lib && npm run npm_pack",
+    "npm_publish": "npm run package && cd dist/cognito-service && npm publish --access=public"
   },
   "dependencies": {
     "@angular/animations": "^6.0.3",

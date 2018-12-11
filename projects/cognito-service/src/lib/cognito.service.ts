@@ -276,6 +276,11 @@ export class CognitoService
 
     AWS.config.region      = this.region;
     AWS.config.credentials = new AWS.CognitoIdentityCredentials(options, clientConfig);
+
+    AWS.config.update({
+      region      : this.region,
+      credentials : new AWS.CognitoIdentityCredentials(options, clientConfig)
+    });
   }
 
   // !SECTION
@@ -999,7 +1004,7 @@ export class CognitoService
 
     return new Promise((resolve, reject) =>
     {
-      gapi.load('auth2', () =>
+      gapi.load('auth2', _ =>
       {
         let initAuth : gapi.auth2.GoogleAuth = null;
         initAuth = gapi.auth2.init(params);
