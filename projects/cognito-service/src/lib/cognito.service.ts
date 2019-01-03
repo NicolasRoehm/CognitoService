@@ -999,23 +999,38 @@ export class CognitoService
 
     return new Promise((resolve, reject) =>
     {
-      gapi.load('auth2', _ =>
+      gapi.load('auth2',
       {
-        let initAuth : gapi.auth2.GoogleAuth = null;
-        initAuth = gapi.auth2.init(params);
-
-        initAuth.then((googleAuth : gapi.auth2.GoogleAuth) =>
+        callback  : _ =>
         {
-          this.googleAuth = googleAuth;
-          let response = new CognitoServiceResponse(RespType.ON_SUCCESS, googleAuth);
-          return resolve(response);
+          gapi.auth2.init(params).then((googleAuth : gapi.auth2.GoogleAuth) =>
+          {
+            this.googleAuth = googleAuth;
+            let response = new CognitoServiceResponse(RespType.ON_SUCCESS, googleAuth);
+            return resolve(response);
+          },
+          (reason : { error : string, details : string }) =>
+          {
+            console.error('CognitoService : initGoogle -> GoogleAuth', reason);
+            let response = new CognitoServiceResponse(RespType.ON_FAILURE, reason);
+            return reject(response);
+          });
         },
-        (reason : { error : string, details : string }) =>
-        {
-          console.error('CognitoService : initGoogle -> GoogleAuth', reason);
-          let response = new CognitoServiceResponse(RespType.ON_FAILURE, reason);
+        onerror   : _ =>
+        { // Handle loading error
+          let error = 'gapi.client failed to load';
+          console.error('CognitoService : initGoogle -> load', error);
+          let response = new CognitoServiceResponse(RespType.ON_ERROR, error);
           return reject(response);
-        });
+        },
+        timeout   : 5000, // 5 seconds
+        ontimeout : _ =>
+        { // Handle timeout
+          let error = 'gapi.client could not load in a timely manner';
+          console.error('CognitoService : initGoogle -> load', error);
+          let response = new CognitoServiceResponse(RespType.ON_TIMEOUT, error);
+          return reject(response);
+        }
       });
     });
   }
@@ -1069,7 +1084,7 @@ export class CognitoService
       let options : gapi.auth2.SigninOptions = {
         scope : this.googleScope
       };
-      gapi.auth2.getAuthInstance().signIn(options).then((googleUser : gapi.auth2.GoogleUser) =>
+      this.googleAuth.signIn(options).then((googleUser : gapi.auth2.GoogleUser) =>
       {
         let googleResponse = googleUser.getAuthResponse();
         let googleProfile  = googleUser.getBasicProfile();
