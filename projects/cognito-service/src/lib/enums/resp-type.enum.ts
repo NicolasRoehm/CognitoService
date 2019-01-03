@@ -2,6 +2,8 @@ export enum RespType
 {
   ON_SUCCESS                       = 'onSuccess',
   ON_FAILURE                       = 'onFailure',
+  ON_ERROR                         = 'onError',
+  ON_TIMEOUT                       = 'onTimeout',
   ON_REJECTED                      = 'onRejected',
   NEW_PASSWORD_REQUIRED            = 'newPasswordRequired',
   INPUT_VERIFICATION_CODE          = 'inputVerificationCode',
