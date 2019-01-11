@@ -34,7 +34,6 @@ export class CognitoService
   // private MFA              : boolean = false;
 
   private storagePrefix    : string;
-  private sessionTime      : number;
 
   private googleId         : string;
   private googleScope      : string;
@@ -62,7 +61,6 @@ export class CognitoService
     this.onSignOut            = new EventEmitter();
 
     this.storagePrefix       = cognitoConst.storagePrefix + '_CognitoService_';
-    this.sessionTime         = cognitoConst.sessionTime || 3500000; // In millisecond
 
     this.googleId            = cognitoConst.googleId;
     this.googleScope         = cognitoConst.googleScope;
@@ -108,28 +106,31 @@ export class CognitoService
 
   // NOTE: Session -----------------------------------------------------------------------------
 
-  public updateSessionTime() : void
+  public autoRefreshSession() : void
   {
     let expiresAt = this.getExpiresAt();
-    let nextTime  = Date.now() + this.sessionTime;
-
     if (!expiresAt)
       return;
 
-    if (nextTime < expiresAt.getTime())
+    let timeDiff = expiresAt.getTime() - Date.now() - 60000; // 1 min
+
+    if (timeDiff < 0)
     {
-      this.setExpiresAt(nextTime);
+      this.signOut();
       return;
     }
 
-    // Refresh token
-    this.refreshSession().then(_ =>
+    setTimeout(() =>
     {
-      this.setExpiresAt(nextTime);
-    }).catch(_ =>
-    {
-      this.signOut();
-    });
+      // Refresh token
+      this.refreshSession().then(_ =>
+      {
+        this.autoRefreshSession();
+      }).catch(_ =>
+      {
+        this.signOut();
+      });
+    }, timeDiff);
   }
 
   public getRemaining() : number
@@ -215,6 +216,14 @@ export class CognitoService
   // SECTION: Credentials ----------------------------------------------------------------------
   // -------------------------------------------------------------------------------------------
 
+  public initCredentials() : void
+  {
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId : this.identityPool,
+    });
+    AWS.config.region = this.region;
+  }
+
   public getCredentials() : Promise<any>
   {
     return new Promise((resolve, reject) =>
@@ -222,7 +231,7 @@ export class CognitoService
       let credentials = AWS.config.credentials as any;
       if (!credentials)
       {
-        let error = 'The user must be logged in to get his credentials';
+        let error = 'You must initialize the credentials with initCredentials()';
         console.error('CognitoService : getCredentials', error);
         return reject(error);
       }
@@ -827,7 +836,7 @@ export class CognitoService
    */
   public signIn(provider : string, username ?: string, password ?: string) : Promise<CognitoServiceResponse>
   {
-    switch(provider)
+    switch (provider)
     {
       case AuthType.COGNITO :
         return this.authenticateCognitoUser(username, password);
@@ -849,7 +858,7 @@ export class CognitoService
     let provider : string = null;
     provider = this.getProvider();
 
-    switch(provider)
+    switch (provider)
     {
       case AuthType.COGNITO :
         return this.refreshCognitoSession();
@@ -868,7 +877,7 @@ export class CognitoService
     let provider : string = null;
     provider = this.getProvider();
 
-    switch(provider)
+    switch (provider)
     {
       case AuthType.COGNITO :
         this.signOutCognito();
@@ -962,7 +971,7 @@ export class CognitoService
     {
       cognitoUser.refreshSession(refreshToken, (err : any, res : any) =>
       {
-        if(res)
+        if (res)
         {
           this.updateTokens(res);
           this.updateCredentials();
@@ -980,7 +989,7 @@ export class CognitoService
   private signOutCognito() : void
   {
     let cognitoUser = this.getCognitoUser();
-    if(cognitoUser)
+    if (cognitoUser)
       cognitoUser.signOut();
   }
 
@@ -1037,7 +1046,7 @@ export class CognitoService
 
   private callGoogle(action : string) : Promise<CognitoServiceResponse>
   {
-    if(this.googleAuth)
+    if (this.googleAuth)
     {
       return this.makeGoogle(action);
     }
@@ -1059,7 +1068,7 @@ export class CognitoService
 
   private makeGoogle(action : string) : Promise<CognitoServiceResponse>
   {
-    switch(action)
+    switch (action)
     {
       case GoogleAction.AUTHENTICATE :
         return this.authenticateGoogleUser();

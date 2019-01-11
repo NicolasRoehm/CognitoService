@@ -22,7 +22,7 @@ export class AuthGuardHelper implements CanLoad
     let isAuthenticated : boolean = false;
     isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
 
-    if(!isAuthenticated)
+    if (!isAuthenticated)
       this.router.navigate(['/login']);
 
     return isAuthenticated;
