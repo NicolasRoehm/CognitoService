@@ -28,7 +28,7 @@ The sample application uses our authentication component : [@caliatys/login-form
 - [Variables](#variables)
 - [Methods](#methods)
   * [Registration](#registration)
-    + [Signup](#signup)
+    + [SignUp](#signup)
     + [Confirm registration](#confirm-registration)
     + [Resend confirmation code](#resend-confirmation-code)
     + [SignIn](#signin)
@@ -39,7 +39,7 @@ The sample application uses our authentication component : [@caliatys/login-form
   * [MFA](#mfa)
     + [Send MFA code](#send-mfa-code)
     + [Get MFA status](#get-mfa-status)
-    + [Enable / Disable MFA](#enable-/-disable-mfa)
+    + [Enable or Disable MFA](#enable-or-disable-mfa)
   * [Password](#password)
     + [New password required](#new-password-required)
     + [Forgot password](#forgot-password)
@@ -51,6 +51,13 @@ The sample application uses our authentication component : [@caliatys/login-form
   * [Get provider](#get-provider)
   * [Get id token](#get-id-token)
   * [Get tokens](#get-tokens)
+  * [Automatic refresh session](#automatic-refresh-session)
+  * [Get token expiration date](#get-token-expiration-date)
+  * [Get the remaining time](#get-the-remaining-time)
+  * [Initialize credentials](#initialize-credentials)
+  * [Update credentials](#update-credentials)
+  * [Get credentials](#get-credentials)
+  * [STS - getCallerIdentity](#sts---getcalleridentity)
 - [Admin](#admin)
   * [Admin create user](#admin-create-user)
   * [Admin delete user](#admin-delete-user)
@@ -835,7 +842,7 @@ this.cognitoHelper.cognitoService.getMFAOptions().then(res => {
 }).catch(err => { });
 ```
 
-#### Enable / Disable MFA
+#### Enable or Disable MFA
 ```typescript
 let enableMfa : boolean = true;
 this.cognitoHelper.cognitoService.setMfa(enableMfa)
@@ -917,6 +924,11 @@ let tokens : any = this.cognitoHelper.cognitoService.getTokens();
 // }
 ```
 
+### Automatic refresh session
+```typescript
+this.cognitoHelper.cognitoService.autoRefreshSession();
+```
+
 ### Get token expiration date
 ```typescript
 let expiresAt : Date = this.cognitoHelper.cognitoService.getExpiresAt();
@@ -925,6 +937,11 @@ let expiresAt : Date = this.cognitoHelper.cognitoService.getExpiresAt();
 ### Get the remaining time
 ```typescript
 let remaining : Number = this.cognitoHelper.cognitoService.getRemaining(); // milliseconds
+```
+
+### Initialize credentials
+```typescript
+this.cognitoHelper.cognitoService.initCredentials();
 ```
 
 ### Update credentials
@@ -938,7 +955,7 @@ this.cognitoHelper.cognitoService.getCredentials()
 .then(res => { }).catch(err => { });
 ```
 
-### STS / getCallerIdentity
+### STS - getCallerIdentity
 ```typescript
 this.cognitoHelper.cognitoService.sts()
 .then(res => { }).catch(err => { });
