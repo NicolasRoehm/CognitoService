@@ -29,7 +29,7 @@ export class LoginComponent
     private translate     : TranslateService
   )
   {
-    if(this.cognitoHelper.cognitoService.isAuthenticated())
+    if (this.cognitoHelper.cognitoService.isAuthenticated())
       this.successfulConnection();
   }
 
@@ -44,7 +44,7 @@ export class LoginComponent
     let social : string = null;
     social = $event.social;
 
-    if(social !== this.cognitoHelper.authType.GOOGLE)
+    if (social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).then(res =>
@@ -68,19 +68,19 @@ export class LoginComponent
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).then(res =>
     {
       // Successful connection
-      if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
+      if (res.type === this.cognitoHelper.respType.ON_SUCCESS)
         this.successfulConnection();
 
       // First connection
-      if(res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
+      if (res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
         this.loginForm.showPwdForm(true);
 
       // MFA required
-      if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
+      if (res.type === this.cognitoHelper.respType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
 
       // MFA setup : associate secret code
-      if(res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
+      if (res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
         this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
     }).catch(err =>
     {
@@ -102,14 +102,14 @@ export class LoginComponent
     this.cognitoHelper.cognitoService.newPasswordRequired(newPassword).then(res =>
     {
       // Success
-      if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
+      if (res.type === this.cognitoHelper.respType.ON_SUCCESS)
       {
         this.loginForm.hidePwdForm();
         this.login($event);
       }
 
       // MFA required
-      if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
+      if (res.type === this.cognitoHelper.respType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
     }).catch(err =>
     {
@@ -125,7 +125,7 @@ export class LoginComponent
     let username : string = null;
     username = $event.username;
 
-    if(!username)
+    if (!username)
     {
       this.snackBar.open(this.translate.instant('ERROR_USR_REQUIRED'), 'X');
       return;
@@ -134,7 +134,7 @@ export class LoginComponent
     this.cognitoHelper.cognitoService.forgotPassword(username).then(res =>
     {
       // Verification code
-      if(res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
+      if (res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
         this.loginForm.showPwdForm(false);
     }).catch(err =>
     {
@@ -176,6 +176,9 @@ export class LoginComponent
     console.log('%c' + 'Provider : '  + this.cognitoHelper.cognitoService.getProvider()  , 'color: white; background-color: green;');
     console.log('%c' + 'IdToken : '   + this.cognitoHelper.cognitoService.getIdToken()   , 'color: white; background-color: black;');
     console.log('%c' + 'ExpiresAt : ' + this.cognitoHelper.cognitoService.getExpiresAt() , 'color: black; background-color: white;');
+
+    this.cognitoHelper.cognitoService.autoRefreshSession();
+
     this.router.navigate(['/home']);
   }
 

@@ -7,13 +7,10 @@ This Angular Library, which currently supports Angular 6.x and 7.x, is a wrapper
 
 ## Note
 The sample application uses our authentication component : [@caliatys/login-form](https://github.com/Caliatys/LoginComponent/).
-It also implements [@ng-idle](https://github.com/HackedByChinese/ng2-idle) and [angular2-moment](https://github.com/urish/ngx-moment) packages to manage the connected user's session.
 
 **Important** : If you plan to use the `CognitoService` as we do in the sample application, please follow the next chapters (External packages [installation](#external-packages) and [usage](#external-packages-1)) or refer to the dedicated documentations. You can also take a look at the [src/app](https://github.com/Caliatys/CognitoService/blob/master/src/app/) folder to see how we use packages together in a concrete example of implementation.
 
 - [@caliatys/login-form - Readme](https://github.com/Caliatys/LoginComponent/#installation)
-- [@ng-idle - Example with sources](https://hackedbychinese.github.io/ng2-idle/)
-- [angular2-moment - Readme](https://www.npmjs.com/package/angular2-moment#installation)
 
 ## Table of contents
 <details>
@@ -24,12 +21,10 @@ It also implements [@ng-idle](https://github.com/HackedByChinese/ng2-idle) and [
   * [CognitoService](#cognitoservice)
   * [External packages](#external-packages)
     + [LoginComponent](#logincomponent)
-    + [NgIdle and Moment](#ngidle-and-moment)
 - [Usage](#usage)
   * [CognitoService](#cognitoservice-1)
   * [External packages](#external-packages-1)
     + [LoginComponent](#logincomponent-1)
-    + [NgIdle and Moment](#ngidle-and-moment-1)
 - [Variables](#variables)
 - [Methods](#methods)
   * [Registration](#registration)
@@ -100,7 +95,6 @@ Copy/paste [src/app/shared/consts/cognito.const.ts](https://github.com/Caliatys/
 ```typescript
 export const CognitoConst = {
   storagePrefix    : 'AngularApp',
-  sessionTime      : 10000, // In millisecond
   googleId         : 'XXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com',
   googleScope      : '',
   poolData         : {
@@ -341,7 +335,7 @@ export class AuthGuardHelper implements CanLoad
     let isAuthenticated : boolean = false;
     isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
 
-    if(!isAuthenticated)
+    if (!isAuthenticated)
       this.router.navigate(['/login']);
 
     return isAuthenticated;
@@ -453,46 +447,83 @@ app/
 ```
 </details>
 
-#### NgIdle and Moment
-<details>
-  <summary>Show / Hide : Installation</summary>
-
-Install `@ng-idle` :
-```sh
-npm install @ng-idle/core @ng-idle/keepalive angular2-moment --save
-```
-
-Add `NgIdleKeepaliveModule` and `MomentModule` into the imports of [app.module.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.module.ts) :
-```typescript
-...
-import { NgIdleKeepaliveModule } from '@ng-idle/keepalive'; // this includes the core NgIdleModule but includes keepalive providers for easy wireup
-import { MomentModule }          from 'angular2-moment';    // optional, provides moment-style pipes for date formatting
-
-@NgModule({
-  imports: [
-    NgIdleKeepaliveModule.forRoot(),
-    MomentModule,
-    ...
-  ],
-  ...
-})
-export class AppModule { }
-```
-</details>
-
 ## Usage
 
 ### CognitoService
-To start using the service, import the `CognitoHelper` into a component (`LoginComponent` for example) :
+
+To start using the service, import the `CognitoHelper` into the [app.component.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.component.ts), for example :
 ```typescript
-...
+// Angular modules
+import { Component }     from '@angular/core';
+import { OnInit }        from '@angular/core';
+import { OnDestroy }     from '@angular/core';
+import { Router }        from '@angular/router';
+
+// External modules
+import { Subscription }  from 'rxjs';
+
+// Helpers
 import { CognitoHelper } from './shared/helpers/cognito.helper';
-...
-export class LoginComponent
+
+@Component({
+  selector    : 'app-root',
+  templateUrl : './app.component.html',
+  styleUrls   : ['./app.component.scss']
+})
+export class AppComponent implements OnInit, OnDestroy
 {
-  constructor(public cognitoHelper : CognitoHelper)
+  public  isAuthenticated : boolean = false;
+
+  // Subscriptions
+  private signInSub  : Subscription;
+  private signOutSub : Subscription;
+
+  constructor
+  (
+    private cognitoHelper : CognitoHelper,
+    private router        : Router
+  ) { }
+
+  public ngOnInit() : void
   {
-    // this.cognitoHelper.cognitoService...
+    this.isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
+    if (this.isAuthenticated)
+    {
+      this.cognitoHelper.cognitoService.updateCredentials();
+      this.cognitoHelper.cognitoService.autoRefreshSession();
+    }
+
+    this.signInSub  = this.signInSubscription();
+    this.signOutSub = this.signOutSubscription();
+  }
+
+  public ngOnDestroy() : void
+  {
+    this.signInSub.unsubscribe();
+    this.signOutSub.unsubscribe();
+  }
+
+  // Subscription
+
+  private signInSubscription() : Subscription
+  {
+    let signInSub : Subscription = null;
+    signInSub = this.cognitoHelper.cognitoService.onSignIn.subscribe(() =>
+    {
+      this.isAuthenticated = true;
+    });
+    return signInSub;
+  }
+
+  private signOutSubscription() : Subscription
+  {
+    let signOutSub : Subscription = null;
+    signOutSub = this.cognitoHelper.cognitoService.onSignOut.subscribe(() =>
+    {
+      this.isAuthenticated = false;
+      this.router.navigate([ '/login' ]);
+    });
+    return signOutSub;
   }
 }
 ```
@@ -555,7 +586,7 @@ export class LoginComponent
     private cognitoHelper : CognitoHelper
   )
   {
-    if(this.cognitoHelper.cognitoService.isAuthenticated())
+    if (this.cognitoHelper.cognitoService.isAuthenticated())
       this.successfulConnection();
   }
 
@@ -568,7 +599,7 @@ export class LoginComponent
     let social : string = null;
     social = $event.social;
 
-    if(social !== this.cognitoHelper.authType.GOOGLE)
+    if (social !== this.cognitoHelper.authType.GOOGLE)
       return;
 
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).then(res =>
@@ -592,19 +623,19 @@ export class LoginComponent
     this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, username, password).then(res =>
     {
       // Successful signIn
-      if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
+      if (res.type === this.cognitoHelper.respType.ON_SUCCESS)
         this.successfulConnection();
 
       // First connection
-      if(res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
+      if (res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
         this.loginForm.showPwdForm(true);
 
       // MFA required
-      if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
+      if (res.type === this.cognitoHelper.respType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
 
       // MFA setup : associate secret code
-      if(res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
+      if (res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
         this.loginForm.showMfaSetupForm('JBSWY3DPEHPK3PXP', 'otpauth://totp/john@doe.com?secret=JBSWY3DPEHPK3PXP&issuer=Caliatys');
     }).catch(err =>
     {
@@ -626,10 +657,10 @@ export class LoginComponent
     this.cognitoHelper.cognitoService.newPasswordRequired(newPassword).then(res =>
     {
       // Success
-      if(res.type === this.cognitoHelper.respType.ON_SUCCESS)
+      if (res.type === this.cognitoHelper.respType.ON_SUCCESS)
         this.loginForm.hidePwdForm();
       // MFA required
-      if(res.type === this.cognitoHelper.respType.MFA_REQUIRED)
+      if (res.type === this.cognitoHelper.respType.MFA_REQUIRED)
         this.loginForm.showMfaForm();
     }).catch(err =>
     {
@@ -645,13 +676,13 @@ export class LoginComponent
     let username : string = null;
     username = $event.username;
 
-    if(!username)
+    if (!username)
       return; // Username required
 
     this.cognitoHelper.cognitoService.forgotPassword(username).then(res =>
     {
       // Verification code
-      if(res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
+      if (res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
         this.loginForm.showPwdForm(false);
     }).catch(err =>
     {
@@ -686,152 +717,6 @@ export class LoginComponent
 ```
 </details>
 
-#### NgIdle and Moment
-
-<details>
-  <summary>Show / Hide : Usage</summary>
-
-Here is how we manage the user's session with `Idle`, `DEFAULT_INTERRUPTSOURCES`, `Keepalive` in [app.component.ts](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.component.ts) :
-```typescript
-// Angular modules
-import { Component }                from '@angular/core';
-import { OnInit }                   from '@angular/core';
-import { OnDestroy }                from '@angular/core';
-import { Router }                   from '@angular/router';
-
-// External modules
-import { Subscription }             from 'rxjs';
-import { Idle }                     from '@ng-idle/core';
-import { DEFAULT_INTERRUPTSOURCES } from '@ng-idle/core';
-import { Keepalive }                from '@ng-idle/keepalive';
-
-// Helpers
-import { CognitoHelper }            from './shared/helpers/cognito.helper';
-
-@Component({
-  selector    : 'app-root',
-  templateUrl : './app.component.html',
-  styleUrls   : ['./app.component.scss']
-})
-export class AppComponent implements OnInit, OnDestroy
-{
-  public  isAuthenticated : boolean = false;
-
-  // Session with : @ng-idle/core - @ng-idle/keepalive - @caliatys/cognito-service
-  public  idleState : string  = 'Not started.';
-  public  timedOut  : boolean = null;
-  public  lastPing ?: Date    = null;
-
-  // Subscriptions
-  private signInSub  : Subscription;
-  private signOutSub : Subscription;
-
-  constructor
-  (
-    private cognitoHelper : CognitoHelper,
-    private router        : Router,
-    private idle          : Idle,
-    private keepalive     : Keepalive
-  )
-  {
-  }
-
-  public ngOnInit() : void
-  {
-    this.isAuthenticated = this.cognitoHelper.cognitoService.isAuthenticated();
-    if(this.isAuthenticated)
-      this.cognitoHelper.cognitoService.updateCredentials();
-
-    this.setIdle();
-
-    this.signInSub  = this.signInSubscription();
-    this.signOutSub = this.signOutSubscription();
-  }
-
-  public ngOnDestroy() : void
-  {
-    this.signInSub.unsubscribe();
-    this.signOutSub.unsubscribe();
-  }
-
-  // Session management
-
-  private setIdle() : void
-  {
-    this.timedOut = false;
-
-    this.idle.setIdle(5); // Sets an idle timeout of 5 seconds
-    this.idle.setTimeout(this.cognitoHelper.cognitoConst.sessionTime); // After X seconds (+ 5 idle seconds) of inactivity, the user will be considered timed out
-
-    this.idle.setInterrupts(DEFAULT_INTERRUPTSOURCES); // Sets the default interrupts, in this case, things like clicks, scrolls, touches to the document
-
-    this.idle.onIdleEnd.subscribe(() => this.idleState = 'No longer idle.');
-
-    this.idle.onIdleStart.subscribe(() => this.idleState = 'You\'ve gone idle!');
-    this.idle.onTimeoutWarning.subscribe((countdown) => this.idleState = 'You will time out in ' + countdown + ' seconds!');
-
-    this.keepalive.interval(5); // Sets the ping interval to 5 seconds
-
-    this.keepalive.onPing.subscribe(() =>
-    {
-      this.cognitoHelper.cognitoService.updateSessionTime();
-      this.lastPing = new Date();
-    });
-
-    this.idle.onTimeout.subscribe(() =>
-    {
-      this.idleState = 'Timed out!';
-      this.timedOut  = true;
-      if(this.cognitoHelper.cognitoService.isAuthenticated())
-        this.cognitoHelper.cognitoService.signOut();
-      this.resetIdle();
-    });
-
-    this.resetIdle();
-  }
-
-  private resetIdle() : void
-  {
-    this.idle.watch();
-    this.idleState = 'Started.';
-    this.timedOut  = false;
-  }
-
-  // Subscription
-
-  private signInSubscription() : Subscription
-  {
-    let signInSub : Subscription = null;
-    signInSub = this.cognitoHelper.cognitoService.onSignIn.subscribe(() =>
-    {
-      this.isAuthenticated = true;
-    });
-    return signInSub;
-  }
-
-  private signOutSubscription() : Subscription
-  {
-    let signOutSub : Subscription = null;
-    signOutSub = this.cognitoHelper.cognitoService.onSignOut.subscribe(() =>
-    {
-      this.isAuthenticated = false;
-      this.router.navigate([ '/login' ]);
-    });
-    return signOutSub;
-  }
-
-}
-```
-
-If you want to display the idle state, you can add it to [app.component.html](https://github.com/Caliatys/CognitoService/blob/master/src/app/app.component.html) :
-```html
-<div *ngIf="isAuthenticated">
-  <p>{{ idleState }}</p>
-  <p *ngIf="lastPing">Last keepalive ping {{ lastPing | amTimeAgo }}</p>
-</div>
-```
-</details>
-
 ## Variables
 
 Events that you can subscribe to deal with `signIn` and `signOut` events
@@ -860,11 +745,8 @@ this.cognitoHelper.cognitoService.signUp('username', 'password').then(res => {
 Depending on your settings, email confirmation may be required.
 In that case, the following function must be called :
 ```typescript
-this.cognitoHelper.cognitoService.confirmRegistration().then(res => {
-  // Success
-}).catch(err => {
-  // Error
-});
+this.cognitoHelper.cognitoService.confirmRegistration()
+.then(res => { }).catch(err => { });
 ```
 
 #### Resend confirmation code
@@ -877,10 +759,11 @@ Connect an existing user with Google or Cognito.
 ##### Google
 ```typescript
 this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).then(res => {
-  // Success
-}).catch(err => {
-  // Error
-});
+
+  let profile : gapi.auth2.BasicProfile = res.data;
+  let email = profile.getEmail();
+
+}).catch(err => { });
 ```
 
 ##### Cognito
@@ -888,27 +771,27 @@ this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).the
 this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, 'username', 'password').then(res => {
 
   // Successful connection
-  if(res.type === RespType.ON_SUCCESS)
+  if (res.type === RespType.ON_SUCCESS)
     let session : AWSCognito.CognitoUserSession = res.data;
 
   // First connection
-  if(res.type === RespType.NEW_PASSWORD_REQUIRED)
+  if (res.type === RespType.NEW_PASSWORD_REQUIRED)
 
   // MFA required
-  if(res.type === RespType.MFA_REQUIRED)
+  if (res.type === RespType.MFA_REQUIRED)
 
   // MFA setup : associate secret code
-  if(res.type === RespType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
+  if (res.type === RespType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
     let secretCode : string = res.data;
 
 }).catch(err => {
 
   // Error
-  if(err.type === RespType.ON_FAILURE)
+  if (err.type === RespType.ON_FAILURE)
     let err : any = res.data;
 
   // MFA setup : error
-  if(err.type === RespType.MFA_SETUP_ON_FAILURE)
+  if (err.type === RespType.MFA_SETUP_ON_FAILURE)
     let err : any = res.data;
 
 });
@@ -955,11 +838,8 @@ this.cognitoHelper.cognitoService.getMFAOptions().then(res => {
 #### Enable / Disable MFA
 ```typescript
 let enableMfa : boolean = true;
-this.cognitoHelper.cognitoService.setMfa(enableMfa).then(res => {
-  // Success
-}).catch(err => {
-  // Error
-});
+this.cognitoHelper.cognitoService.setMfa(enableMfa)
+.then(res => { }).catch(err => { });
 ```
 
 ### Password
@@ -968,13 +848,12 @@ this.cognitoHelper.cognitoService.setMfa(enableMfa).then(res => {
 Complete the `NEW_PASSWORD_REQUIRED` response sent by the `signIn` method to finish the first connection flow.
 ```typescript
 this.cognitoHelper.cognitoService.newPasswordRequired('newPassword').then(res => {
-
   // Success
-  if(res.type === RespType.ON_SUCCESS)
-
+  if (res.type === RespType.ON_SUCCESS)
+    // ...
   // MFA required
-  if(res.type === RespType.MFA_REQUIRED)
-
+  if (res.type === RespType.MFA_REQUIRED)
+    // ...
 }).catch(err => { });
 ```
 
@@ -983,31 +862,24 @@ Start a forgot password flow.
 Cognito will send a `verificationCode` to one of the user's confirmed contact methods (email or SMS) to be used in the `confirmPassword` method below.
 ```typescript
 this.cognitoHelper.cognitoService.forgotPassword('username').then(res => {
-
   // Verification code
-  if(res.type === RespType.INPUT_VERIFICATION_CODE)
-
+  if (res.type === RespType.INPUT_VERIFICATION_CODE)
+    // ...
 }).catch(err => { });
 ```
 
 #### Confirm password
 Complete the `INPUT_VERIFICATION_CODE` response sent by the `forgotPassword` method to finish the forgot password flow.
 ```typescript
-this.cognitoHelper.cognitoService.confirmPassword('newPassword', 'verificationCode').then(res => {
-  // Success
-}).catch(err => {
-  // Error
-});
+this.cognitoHelper.cognitoService.confirmPassword('newPassword', 'verificationCode')
+.then(res => { }).catch(err => { });
 ```
 
 #### Change password
 Use this method to change the user's password.
 ```typescript
-this.cognitoHelper.cognitoService.changePassword('oldPassword', 'newPassword').then(res => {
-  // Success
-}).catch(err => {
-  // Error
-});
+this.cognitoHelper.cognitoService.changePassword('oldPassword', 'newPassword')
+.then(res => { }).catch(err => { });
 ```
 
 ## Helpers
@@ -1062,50 +934,49 @@ this.cognitoHelper.cognitoService.updateCredentials();
 
 ### Get credentials
 ```typescript
-this.cognitoHelper.cognitoService.getCredentials().then(res => {
-  // Success
-}).catch(err => {
-  // Error
-});
+this.cognitoHelper.cognitoService.getCredentials()
+.then(res => { }).catch(err => { });
 ```
 
 ### STS / getCallerIdentity
 ```typescript
-this.cognitoHelper.cognitoService.sts().then(res => {
-  // Success
-}).catch(err => {
-  // Error
-});
+this.cognitoHelper.cognitoService.sts()
+.then(res => { }).catch(err => { });
 ```
 
 ## Admin
 
 ### Admin create user
 ```typescript
-this.cognitoHelper.cognitoService.adminCreateUser('username', 'password').then(res => { }).catch(err => { });
+this.cognitoHelper.cognitoService.adminCreateUser('username', 'password')
+.then(res => { }).catch(err => { });
 ```
 
 ### Admin delete user
 ```typescript
-this.cognitoHelper.cognitoService.adminDeleteUser('username').then(res => { }).catch(err => { });
+this.cognitoHelper.cognitoService.adminDeleteUser('username')
+.then(res => { }).catch(err => { });
 ```
 
 ### Admin reset user password
 ```typescript
-this.cognitoHelper.cognitoService.adminResetUserPassword('username').then(res => { }).catch(err => { });
+this.cognitoHelper.cognitoService.adminResetUserPassword('username')
+.then(res => { }).catch(err => { });
 ```
 
 ### Admin update user attributes
 ```typescript
 let userAttributes : AWS.CognitoIdentityServiceProvider.Types.AttributeListType;
-this.cognitoHelper.cognitoService.adminUpdateUserAttributes('username', userAttributes).then(res => { }).catch(err => { });
+this.cognitoHelper.cognitoService.adminUpdateUserAttributes('username', userAttributes)
+.then(res => { }).catch(err => { });
 ```
 
 ## Admin helpers
 
 ### Reset expired account
 ```typescript
-this.cognitoHelper.cognitoService.resetExpiredAccount('usernameKey', 'username').then(res => { }).catch(err => { });
+this.cognitoHelper.cognitoService.resetExpiredAccount('usernameKey', 'username')
+.then(res => { }).catch(err => { });
 ```
 
 ### Set admin
@@ -1142,7 +1013,6 @@ If it's an empty Angular application :
 ### In progress
 
 ### Planning
-- Translate & design Idle
 - Facebook
 
 ### Contributions

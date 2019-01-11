@@ -10,8 +10,6 @@ import { BrowserModule }           from '@angular/platform-browser';
 import { TranslateModule }         from '@ngx-translate/core';
 import { TranslateLoader }         from '@ngx-translate/core';
 import { TranslateHttpLoader }     from '@ngx-translate/http-loader';
-import { NgIdleKeepaliveModule }   from '@ng-idle/keepalive';
-import { MomentModule }            from 'angular2-moment';
 
 // Helpers
 import { CognitoHelper }           from './shared/helpers/cognito.helper';
@@ -34,10 +32,6 @@ import { AppComponent }            from './app.component';
     HttpClientModule,
     BrowserAnimationsModule,
     BrowserModule,
-
-    // TODO: Modules to import into your project
-    NgIdleKeepaliveModule.forRoot(),
-    MomentModule,
 
     // External modules
     TranslateModule.forRoot({
