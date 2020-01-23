@@ -1,7 +1,7 @@
 {
   "name": "cognito-service-app",
   "description": "Typescript service for AWS Cognito with Angular",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "author": "Nicolas Roehm <nicolas.roehm@gmail.com>",
   "license": "MIT",
   "homepage": "https://github.com/Caliatys/CognitoService#readme",
@@ -61,7 +61,7 @@
     "zone.js": "^0.8.26"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^0.800.3",
+    "@angular-devkit/build-angular": "^0.803.23",
     "@angular-devkit/build-ng-packagr": "^0.13.5",
     "@angular/cli": "~7.0.5",
     "@angular/compiler-cli": "^7.2.9",

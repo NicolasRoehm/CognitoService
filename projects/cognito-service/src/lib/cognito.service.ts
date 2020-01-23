@@ -468,7 +468,12 @@ export class CognitoService
       {
         onSuccess : (session : AWSCognito.CognitoUserSession) =>
         {
+          this.setUsername(cognitoUser.getUsername());
           this.updateTokens(session);
+          this.setProvider(AuthType.COGNITO);
+          this.updateCredentials();
+
+          this.onSignIn.emit();
           let response = new CognitoServiceResponse(RespType.ON_SUCCESS, session);
           return resolve(response);
         },
