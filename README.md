@@ -778,27 +778,27 @@ this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.GOOGLE).the
 this.cognitoHelper.cognitoService.signIn(this.cognitoHelper.authType.COGNITO, 'username', 'password').then(res => {
 
   // Successful connection
-  if (res.type === RespType.ON_SUCCESS)
+  if (res.type === this.cognitoHelper.respType.ON_SUCCESS)
     let session : AWSCognito.CognitoUserSession = res.data;
 
   // First connection
-  if (res.type === RespType.NEW_PASSWORD_REQUIRED)
+  if (res.type === this.cognitoHelper.respType.NEW_PASSWORD_REQUIRED)
 
   // MFA required
-  if (res.type === RespType.MFA_REQUIRED)
+  if (res.type === this.cognitoHelper.respType.MFA_REQUIRED)
 
   // MFA setup : associate secret code
-  if (res.type === RespType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
+  if (res.type === this.cognitoHelper.respType.MFA_SETUP_ASSOCIATE_SECRETE_CODE)
     let secretCode : string = res.data;
 
 }).catch(err => {
 
   // Error
-  if (err.type === RespType.ON_FAILURE)
+  if (err.type === this.cognitoHelper.respType.ON_FAILURE)
     let err : any = res.data;
 
   // MFA setup : error
-  if (err.type === RespType.MFA_SETUP_ON_FAILURE)
+  if (err.type === this.cognitoHelper.respType.MFA_SETUP_ON_FAILURE)
     let err : any = res.data;
 
 });
@@ -856,10 +856,10 @@ Complete the `NEW_PASSWORD_REQUIRED` response sent by the `signIn` method to fin
 ```typescript
 this.cognitoHelper.cognitoService.newPasswordRequired('newPassword').then(res => {
   // Success
-  if (res.type === RespType.ON_SUCCESS)
+  if (res.type === this.cognitoHelper.respType.ON_SUCCESS)
     // ...
   // MFA required
-  if (res.type === RespType.MFA_REQUIRED)
+  if (res.type === this.cognitoHelper.respType.MFA_REQUIRED)
     // ...
 }).catch(err => { });
 ```
@@ -870,7 +870,7 @@ Cognito will send a `verificationCode` to one of the user's confirmed contact me
 ```typescript
 this.cognitoHelper.cognitoService.forgotPassword('username').then(res => {
   // Verification code
-  if (res.type === RespType.INPUT_VERIFICATION_CODE)
+  if (res.type === this.cognitoHelper.respType.INPUT_VERIFICATION_CODE)
     // ...
 }).catch(err => { });
 ```
